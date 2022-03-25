@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>模板编译原理</title>
+    <link href="../favicon.jpg" rel="icon">
+    <script type="text/javascript" src="../vue.js"></script>
+</head>
+
+<body>
+    <div id="app">{{a}}</div>
+    <script type="text/javascript">
+        // 渲染到哪个根节点上：判断有无el属性，有的话直接获取el根节点，没有的话调用$mount去获取根节点
+        // 有render：这时候优先执行render函数，render优先级 > template
+        // 无render：
+        //   1、有template：拿template去解析成render函数的所需的格式，并使用调用render函数渲染
+        //   2、无template：拿el根节点的outerHTML去解析成render函数的所需的格式，并使用调用render函数渲染
+        // 无论什么情况，最后都统一是要使用render函数渲染
+        const x = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    a: 1,
+                    b: [1]
+                }
+            },
+            render(h) {
+                return h('div', { id: 'hhh' }, 'hello')
+            },
+            template: `<h2>{{a}}</h2>`
+        }).$mount('#app')
+    </script>
+</body>
+
+</html>

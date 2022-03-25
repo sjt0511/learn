@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>混入</title>
+    <link href="../favicon.jpg" rel="icon">
+    <script type="text/javascript" src="../vue.js"></script>
+</head>
+
+<body>
+    <div id="app">{{a}}</div>
+    <script type="text/javascript">
+        // 全局mixin，会影响到在它之后的每个组件创建
+        const mixinCommon = {
+            created () {
+                console.log('全局mixin')
+            }
+        }
+        // 合并策略
+        // data数据属性：内部递归合并，冲突时取组件数据
+        // 生命周期钩子函数：同名钩子合并为一个数组，并且mixin对象的钩子先执行
+        // 值为对象的选项（methods、components、directives）：合并为同一个对象，键名冲突时取组件的键值对
+        const mixin = {
+            data () {
+                return {
+                    a: 'hhh',
+                    c: 'mixin的属性'
+                }
+            },
+            created () {
+                console.log('我是mixin', this.$data)
+            }
+        }
+        // TODO: 自定义合并策略 Vue.config.optionMergeStrategies
+        // 给 Vue.config.optionMergeStrategies 添加一个函数
+        Vue.mixin(mixinCommon)
+        const x = new Vue({
+            el: '#app',
+            mixins: [mixin],
+            data() {
+                return {
+                    a: 1,
+                    b: [1]
+                }
+            },
+            created () {
+                console.log('我是组件', this.$data)
+            }
+        })
+    </script>
+</body>
+
+</html>
