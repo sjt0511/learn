@@ -1,21 +1,52 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>自定义指令</title>
-        <link rel="icon" href="../favicon.jpg">
-        <script type="text/javascript" src="../vue.js"></script>
-    </head>
-    <body>
-        <div id="app">自定义指令</div>
-        <script type="text/javascript">
-            const options = {
-                data () {
-                    return {}
-                },
-                created () {},
+
+<head>
+    <meta charset="UTF-8">
+    <title>自定义指令</title>
+    <link rel="icon" href="../favicon.jpg">
+    <script type="text/javascript" src="../vue.js"></script>
+</head>
+
+<body>
+    <div id="app" v-demo:foo.a.b="message">自定义指令</div>
+    <script type="text/javascript">
+        const options = {
+            el: '#app',
+            data() {
+                return {
+                    message: { value1: '111', value2: ['a', 'b'] }
+                }
+            },
+            created() { },
+        }
+        Vue.directive('demo', {
+            bind: function (el, binding, vnode) {
+                var s = JSON.stringify
+                // v-demo:foo.a.b
+                // name=demo  arg=foo mofidiers={a:true,b:true} value=message的value expression是很好后面“”里的表达式
+                el.innerHTML =
+                    'name: ' + s(binding.name) + '<br>' +
+                    'value: ' + s(binding.value) + '<br>' +
+                    'expression: ' + s(binding.expression) + '<br>' +
+                    'argument: ' + s(binding.arg) + '<br>' +
+                    'modifiers: ' + s(binding.modifiers) + '<br>' +
+                    'vnode keys: ' + Object.keys(vnode).join(', ')
             }
-            const vm = new Vue(options)
-        </script>
-    </body>
+        })
+        Vue.directive('demo2', function (el, binding, vnode) {
+            var s = JSON.stringify
+            el.innerHTML =
+                'name: ' + s(binding.name) + '<br>' +
+                'value: ' + s(binding.value) + '<br>' +
+                'expression: ' + s(binding.expression) + '<br>' +
+                'argument: ' + s(binding.arg) + '<br>' +
+                'modifiers: ' + s(binding.modifiers) + '<br>' +
+                'vnode keys: ' + Object.keys(vnode).join(', ')
+
+        })
+        const vm = new Vue(options)
+    </script>
+</body>
+
 </html>
