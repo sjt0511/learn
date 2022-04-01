@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        div {
+            position: relative; 
+            margin-bottom: 10px;
+            height: 200px;
+            background: #eee;
+        }
+
+        .flex {
+            display: flex;
+            flex-flow: row;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .grid {
+            display: grid;
+        }
+        
+        .absolute {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .auto {
+            margin: auto;
+            width: 300px;
+            background: pink;
+        }
+
+        .flex_auto {
+            display: flex;
+        }
+
+        .inline_block {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
+        .text {
+            text-align: center;
+            line-height: 200px;
+        }
+    </style>
+</head>
+<body>
+    <!-- flex布局：不需要设定父的宽高 -->
+    <div class="flex">
+        <span class="item">flex布局</span>
+    </div>
+    <!-- TODO: grid布局 -->
+    <div class="grid">
+        <span class="item">grid布局</span>
+    </div>
+    <!-- 绝对定位 -->
+    <div class="">
+        <span class="absolute">绝对定位</span>
+    </div>
+    <!-- margin: auto -->
+    <!-- margin：auto 默认只会计算左右边距。而上下如果设置为auto时默认是取0，默认不能实现垂直居中 -->
+    <div>
+        <p class="auto">margin: auto，无法垂直居中</span>
+    </div>
+    <!-- flex配合margin: auto -->
+    <div class="flex_auto">
+        <p class="auto">flex配合margin: auto</p>
+    </div>
+    <!-- TODO:行内块 -->
+    <div>
+        <span class="inline_block">行内块vertical-align</span>
+    </div>
+    <!-- 文字 -->
+    <div class="text">
+        文字: line-height === height
+    </div>
+</body>
+</html>
