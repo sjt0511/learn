@@ -45,6 +45,26 @@
                 'vnode keys: ' + Object.keys(vnode).join(', ')
 
         })
+        Vue.directive('demo3', { // 指令 - v-demo="n"
+            // 指令与元素成功绑定时(一上来)
+            bind (el, binding) {
+                console.log('bind', el, binding)
+                el.focus()
+            },
+            // 指令所在元素被插入页面时
+            inserted (el) {
+                console.log('inserted', el)
+            },
+            // 指令所在模板被重新解析时，不必是n变化，可能是其他数据的变化引起页面重新被解析
+            update (el) {
+                console.log('update', el)
+            }
+        })
+        Vue.directive('demo4', function(el, binding) {
+            // 相当于上面的 bind和update
+            // 即函数会在：指令与元素成功绑定(一上来)、指令所在的模板被重新解析时 被调用
+            console.log(el, binding)
+        })
         const vm = new Vue(options)
     </script>
 </body>

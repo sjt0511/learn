@@ -31,3 +31,5 @@
 > 使用 vue inspect > output.js 可查看到 Vue 脚手架的默认配置(webpack.config.js)
 >
 > 使用 [vue.config.js](https://cli.vuejs.org/zh/config/#vue-config-js) 可以对脚手架进行个性化定制
+
+TODO: less

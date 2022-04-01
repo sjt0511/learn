@@ -1,7 +1,7 @@
 <template>
     <div class="school">
-        <h2>{{name}}</h2>
-        <h3>{{address}}</h3>
+        <h2 v-demo="n">{{name|myStr}}</h2>
+        <h3 v-demo2="n">{{address}}</h3>
     </div>    
 </template>
 
@@ -10,7 +10,8 @@
         name: 'SchoolMain',
         data () {
             return {
-                name: '学校',
+                n: 1,
+                name: '学校aaaa',
                 address: '地址'
             }
         },
