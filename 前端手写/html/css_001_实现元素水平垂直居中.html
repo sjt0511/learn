@@ -31,6 +31,19 @@
             transform: translate(-50%, -50%);
         }
 
+        .absolute_margin {
+            display: inline-block;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            margin: auto;
+            width: 100px;
+            height: 100px;
+            background: pink;
+        }
+
         .auto {
             margin: auto;
             width: 300px;
@@ -61,9 +74,13 @@
     <div class="grid">
         <span class="item">grid布局</span>
     </div>
-    <!-- 绝对定位 -->
+    <!-- 绝对定位 transform -->
     <div class="">
-        <span class="absolute">绝对定位</span>
+        <span class="absolute">绝对定位transform</span>
+    </div>
+    <!-- 绝对定位 margin: auto -->
+    <div>
+        <span class="absolute_margin">绝对定位 margin：auto</span>
     </div>
     <!-- margin: auto -->
     <!-- margin：auto 默认只会计算左右边距。而上下如果设置为auto时默认是取0，默认不能实现垂直居中 -->
