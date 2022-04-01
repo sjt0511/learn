@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>前端手写</title>
+    <link rel="stylesheet" href="../css/index.css">
+</head>
+
+<body>
+    <div id="app">
+        <p class="passage">
+            Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate sapiente earum nihil mollitia deleniti
+            voluptates nulla esse, inventore dolore culpa molestiae, porro ad quis explicabo! Dolore voluptate sapiente
+            quod facere?
+        </p>
+        <button id="btn">点我</button>
+    </div>
+    <script type="text/javascript" src="../js/防抖节流.js"></script>
+    <script type="text/javascript">
+        // 防抖
+        const btn = document.getElementById('btn')
+        btn.onclick = debounce(function (...args) {
+            console.log('click', ...args)
+        }, 500)
+
+        // 节流
+        const passage = document.querySelector('.passage')
+        passage.onscroll = throttle(function (...args) {
+            console.log('scroll', ...args)
+        }, 500)
+    </script>
+</body>
+
+</html>
