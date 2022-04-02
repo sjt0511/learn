@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>左侧固定右侧自适应</title>
+    <style>
+        .flex {
+            display: flex;
+        }
+
+        .flex div {
+            height: 100px;
+        }
+
+        .flex :first-child {
+            width: 300px;
+            background: pink;
+        }
+
+        .flex :last-child {
+            flex: auto;
+            background: #eee;
+        }
+
+        /* 圣杯&双飞翼 */
+        #middle, #left, #right {
+            float: left;
+            height: 200px;
+        }
+        #middle {
+            width: 100%;
+            background: #eee;
+        }
+        #left, #right {
+            width: 200px;
+            background: pink;
+        }
+        
+        /* margin-left 和 margin-top 会使元素向左和向上移动 */
+        /* margin-right 和 margin-bottom 会使自身在布局中所占的位置减少， 使右边的元素或下边的元素向自身移动 */
+
+        /* 圣杯 */
+        /* 父盒子cup用padding留出左右的位置;用overflow触发BFC清除浮动 */
+        /* 先用负margin向左移动元素，使它们在一行上且满足左中右结构，但其实是左右盖住了中，中的宽度还是那么多 */
+        /* 然后再移动左右元素到两边，不再遮住中 */
+        .cup {
+            overflow: hidden;
+            padding: 0 200px;
+        }
+        .cup #left {
+            margin-left: -100%;
+            position: relative;
+            left: -200px;
+        }
+        .cup #right {
+            margin-left: -200px;
+            position: relative;
+            left: 200px;
+        }
+        /* 双飞翼 */
+        /* 父盒子wing用overflow:hidden触发BFC，清除浮动 */
+        /* 用负margin向左移动元素，使它们在一行上且满足左中右结构，但其实是左右盖住了中 */
+        /* 让中里的盒子用margin跑出左右的覆盖 */
+        .wing {
+            overflow: hidden;
+        }
+        .wing #left {
+            margin-left: -100%;
+        }
+
+        .wing #right {
+            margin-left: -200px;
+        }
+
+        .middle-inner {
+            margin: 0 200px;
+            height: 100%;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <h3>flex实现</h3>
+    <div class="flex">
+        <div></div>
+        <div></div>
+    </div>
+
+    <hr />
+    <p>主要解决三列布局， 中间列需要优先渲染的问题-中间列放在html最前面|通过设置负margin来实现元素的排布</p>
+    <!-- 圣杯布局 -->
+    <h3>圣杯布局</h3>
+    <div class="cup">
+        <div id="middle">
+            middle
+        </div>
+        <div id="left">left</div>         
+        <div id="right">right</div>
+    </div>
+
+    <!-- 双飞翼布局 -->
+    <h3>双飞翼布局</h3>
+    <div class="wing">
+        <div id="middle">
+            <div class="middle-inner">
+                middle里面的小盒子middle-inner
+            </div>
+        </div>
+        <div id="left">left</div>         
+        <div id="right">right</div>
+    </div>
+</body>
+
+</html>

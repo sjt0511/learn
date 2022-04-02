@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>localStorage&sessionStorage</title>
+</head>
+<body>
+    <div>
+        <h2>localStorage</h2>
+        <button onclick="deal.setItem()">添加属性</button>
+        <button onclick="deal.getItem()">读取属性</button>
+        <button onclick="deal.removeItem()">删除属性</button>
+        <button onclick="deal.clear()">清空storage</button>
+    </div>
+    <div>
+        <h2>sessionStorage</h2>
+        <button onclick="deal.setItem('sessionStorage')">添加属性</button>
+        <button onclick="deal.getItem('sessionStorage')">读取属性</button>
+        <button onclick="deal.removeItem('sessionStorage')">删除属性</button>
+        <button onclick="deal.clear('sessionStorage')">清空storage</button>
+    </div>
+    <script>
+        const deal = {
+            setItem (type = 'localStorage') {
+                // 键, 值-> 字符串
+                window[type].setItem('name', '派派')
+                window[type].setItem('obj', JSON.stringify({name: '派派', age: 3}))
+            },
+            getItem (type = 'localStorage') {
+                alert(window[type].getItem('name'))
+            },
+            removeItem (type = 'localStorage') {
+                window[type].removeItem('obj')
+            },
+            clear (type = 'localStorage') {
+                window[type].clear()
+            }
+        }
+    </script>
+</body>
+</html>
