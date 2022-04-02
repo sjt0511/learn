@@ -1,3 +1,4 @@
+<!-- 引入js -->
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,14 +12,18 @@
 
 <body>
     <div id="app">
+        <h3>001_防抖节流</h3>
+        防抖动和节流本质是不一样的。防抖动是将多次执行变为最后一次执行，节流是将多次执行变成每隔一段时间执行
         <p class="passage">
+            节流
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Cupiditate sapiente earum nihil mollitia deleniti
             voluptates nulla esse, inventore dolore culpa molestiae, porro ad quis explicabo! Dolore voluptate sapiente
             quod facere?
         </p>
-        <button id="btn">点我</button>
+        <button id="btn">点我防抖</button>
+        <hr/>
     </div>
-    <script type="text/javascript" src="../js/防抖节流.js"></script>
+    <script type="text/javascript" src="./001_防抖节流.js"></script>
     <script type="text/javascript">
         // 防抖
         const btn = document.getElementById('btn')
