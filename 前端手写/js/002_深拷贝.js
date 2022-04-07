@@ -165,6 +165,15 @@ const clone3 = {
     },
     handleNotTraverse(obj, tag) {
         switch (tag) {
+            // case this.tags.boolean:
+            // case this.tags.number:
+            // case this.tags.string:
+            // case this.tags.error:
+            // case this.tags.date:
+            //     return new obj.constructor(obj)
+            // case this.tags.symbol: // symbol不是用new创建的
+            //     // TODO: '[Object symbol]'怎么处理
+            //     return new Object(Symbol.prototype.valueOf.call(obj))
             case this.tags.boolean:
                 return new Object(Boolean.prototype.valueOf.call(obj));
             case this.tags.number:
@@ -193,7 +202,7 @@ const clone3 = {
         const type = Object.prototype.toString.call(obj) // 对象具体的类型
         let copy = null // 最终副本
 
-        // 拷贝特殊对象--如果是不可遍历的对象
+        // 不可遍历的对象
         if (!this.canTraverse[type]) {
             return this.handleNotTraverse(obj, type)
         }
@@ -212,17 +221,16 @@ const clone3 = {
             obj.forEach((item, key) => {
                 copy.set(this.deepClone(key, map), this.deepClone(item, map));
             })
-        }
-        if (type === this.tags.set) { // Set
+        } else if (type === this.tags.set) { // Set
             obj.forEach(item => {
                 copy.add(this.deepClone(item, map))
             })
-        }
-
-        // 对象、数组
-        const keys = Object.keys(obj)
-        for (let key of keys) {
-            copy[key] = this.deepClone(obj[key], map)
+        } else {
+            // 对象、数组
+            const keys = Object.keys(obj)
+            for (let key of keys) {
+                copy[key] = this.deepClone(obj[key], map)
+            }
         }
 
         return copy
