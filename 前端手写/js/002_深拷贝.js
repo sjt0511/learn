@@ -28,7 +28,8 @@ function clone1_json_stringify() { // JSON序列化
     // '[null,null,null]' undefined、任意的函数以及 symbol 值，在序列化过程中被转换成 null（出现在数组中时）
     JSON.stringify(undefined)
     JSON.stringify(function () { })
-    // undefined undefined    函数、undefined被单独转换时，会返回 undefined
+    JSON.stringify(Symbol('key'))
+    // undefined undefined undefined    函数、undefined、Symbol被单独转换时，会返回 undefined
     JSON.stringify(null)
     JSON.stringify(NaN)
     JSON.String(Infinity)
