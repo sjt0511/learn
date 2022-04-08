@@ -3,7 +3,7 @@
 // 单独转化时，undefined、函数、symbol--undefined；对象里被忽略；数组里''
 // 需要递归
 const _010_JSON_stringify = {
-    jsonStringify (obj, map = new WeakMap()) {
+    stringify (obj, map = new WeakMap()) {
         const type = typeof obj
         switch (type) {
             case 'undefined':
@@ -25,7 +25,7 @@ const _010_JSON_stringify = {
             case 'object':
                 if (obj.toJSON) { // 对象有 toJSON 就先用 toJSON 转化成 b, 再用 b 去序列化
                     obj = obj.toJSON()
-                    return this.jsonStringify(obj, map)
+                    return this.stringify(obj, map)
                 } else {
                     if (map.get(obj)) { // 循环引用要报错 即 a.target = a 这种
                         throw new TypeError('Converting circular structure to JSON')
@@ -43,7 +43,7 @@ const _010_JSON_stringify = {
                                 arr.push(null)
                             } else {
                                 // 递归得到数组里成员的JSON放入数组
-                                arr.push(`${this.jsonStringify(values[i], map)}`)
+                                arr.push(`${this.stringify(values[i], map)}`)
                             }
                         }
                         return `[${arr.join(',')}]`
@@ -54,7 +54,7 @@ const _010_JSON_stringify = {
                             if (/undefined|function|symbol/.test(typeof values[i])) {
                             } else {
                                 // 递归得到对象里属性的JSON，组成 '"key":JSON串' 这种形式放入数组
-                                arr.push(`"${keys[i]}":${this.jsonStringify(values[i], map)}`)
+                                arr.push(`"${keys[i]}":${this.stringify(values[i], map)}`)
                             }
                         }
                         return `{${arr.join(',')}}`
@@ -62,6 +62,9 @@ const _010_JSON_stringify = {
                 }
             
         }
+    },
+    parse (str) {
+        return (new Function(`return ${str}`))()
     },
     init () {
         const a = {
@@ -81,11 +84,12 @@ const _010_JSON_stringify = {
                 regexp: new RegExp('ab+c', 'i'),
             }
         }
-        const my = this.jsonStringify(a)
+        const my = this.stringify(a)
         const origin = JSON.stringify(a)
         console.log(a, 'my===JSON???',my === origin)
         console.log('my=', my)
         console.log('JSON=',origin)
         console.log('JSON.parse(my)', JSON.parse(my))
+        console.log('myParse', this.parse(my))
     }
 }
