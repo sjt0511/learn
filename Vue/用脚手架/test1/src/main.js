@@ -22,4 +22,7 @@ new Vue({
   //   return createElement('h1', '你好啊') // h1是HTML内置标签，需要指定里面的内容
   // },
   // template: '<h1>你好啊</h1>', // 写了也没用
+  beforeCreate () {
+    Vue.prototype.$bus = this // this是就是new出来的Vue实例vm；vm上有$on|$off|$emit
+  }
 }).$mount('#app') // 容器

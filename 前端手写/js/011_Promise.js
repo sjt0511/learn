@@ -67,9 +67,40 @@ const _011_promise = {
             })
         }
 
-        Promise.allSettled = function (promises) {
+        Promise.allSettled = function (iterable) {
+            // Promise 新建后立即执行
+            // then方法指定的回调函数，将在当前脚本所有同步任务执行完才会执行
             return new Promise((resolve, reject) => {
-                
+                function addElementToResult(i, elem) {
+                    result[i] = elem;
+                    elementCount++;
+                    if (elementCount === result.length) {
+                      resolve(result);
+                    }
+                }
+                let i = 0
+                for (const promise of iterable) {
+                    const currentIndex = i
+                    Promise.resolve(promise).then(value => {
+                        addElementToResult(currentIndex, {
+                            status: 'fufilled',
+                            value
+                        })
+                    }).catch(reason => {
+                        addElementToResult(currentIndex, {
+                            status: 'rejected',
+                            reason
+                        })
+                    })
+                    i++
+                }
+                if (i === 0) {
+                    resolve([])
+                    return
+                }
+
+                let elementCount = 0
+                const result = new Array(i)
             })
         }
 
