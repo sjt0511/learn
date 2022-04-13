@@ -1,6 +1,7 @@
 /**
  * 整个项目的入口，先执行这个文件（CLI 搞的）
  */
+import '../src/styles/index.scss'
 // 引入Vue：残缺的Vue(缺模板解析器)vue.runtime.esm.js|Vue包含两部分：Vue核心(生命周期、处理事件等)+模板解析器(解析new Vue() template里面的内容)
 // 为什么引入残缺Vue：webpack打包的时候包体积可以小一点
 // vue.runtime.esm.js：runtime=>运行时(去掉了模板解析器) esm=>ES6 module引入(import ...)

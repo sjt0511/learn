@@ -1,20 +1,23 @@
 <!-- 管理所有组件 -->
 <template>
   <div>
-      <School></School>
-      <Student></Student>
+      <Test></Test>
+      <!-- <School></School>
+      <Student></Student> -->
   </div>
 </template>
 
 <script>
-import Student from './components/Student.vue'
-import School from './components/School.vue'
+// import Student from './components/Student.vue'
+// import School from './components/School.vue'
+import Test from './components/Test.vue'
 
 export default {
     name: 'App',
     components: {
-        Student,
-        School
+        // Student,
+        // School,
+        Test
     }
 }
 </script>
