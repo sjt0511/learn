@@ -14,6 +14,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
     name: 'TestMain',
     data () {
@@ -23,6 +24,12 @@ export default {
                 data: []
             }
         }
+    },
+    computed: {
+        storeName () {
+            return this.$store.state.main.name
+        },
+        ...mapState('main', ['name'])
     },
     methods: {
         add() {
