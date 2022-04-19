@@ -9,13 +9,18 @@ import Vue from 'vue'
 // 引入App 组件--所有组件的父组件
 import App from './App.vue'
 import plugin from './plugin'
+// vuex
 import store from './store/index'
+// vue-router
+import router from './router'
+
 
 // 关闭 Vue 的生产提示
 Vue.config.productionTip = false
 
 // 使用插件
 Vue.use(plugin)
+
 
 // 创建 Vue 实例对象 vm
 new Vue({
@@ -26,6 +31,7 @@ new Vue({
   // },
   // template: '<h1>你好啊</h1>', // 写了也没用
   store,
+  router,
   beforeCreate () {
     Vue.prototype.$bus = this // this是就是new出来的Vue实例vm；vm上有$on|$off|$emit
   }
