@@ -11,10 +11,15 @@ const router =  new VueRouter({
     mode: 'hash',
     routes: [
         {
-            path: '/test',
+            path: '/test:id',
             name: 'test',
             component: () => import('../components/Test.vue'),
-            meta: { title: '测试', isAuth: true }
+            meta: { title: '测试', isAuth: true },
+            props: true, // params传参-配合path:id
+            // props: { id: 666 }, // 对象，死值
+            // props ($route) { // 函数
+            //     return { id: $route.query.id }
+            // }
         },
         {
             path: '/school',
