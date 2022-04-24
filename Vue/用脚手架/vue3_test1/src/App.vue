@@ -1,12 +1,13 @@
 <template>
-hhh
+  <TestIndex></TestIndex>
 </template>
 
 <script>
-
+import TestIndex from './view/test/TestIndex.vue'
 export default {
   name: 'App',
   components: {
+    TestIndex
   }
 }
 </script>
