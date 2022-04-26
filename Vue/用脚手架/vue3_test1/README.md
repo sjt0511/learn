@@ -352,3 +352,53 @@ npm run dev
   - `updated` ========> `onUpdated`
   - `beforeUnmount` ==> `onBeforeUnmount`
   - `unmounted` ======> `onUnmounted`
+
+### 9.自定义 hook 函数
+
+- 什么是 hook？ —— 本质是一个函数，把 setup 函数中使用的 Composition API 进行了封装
+- 类似于 Vue2.x 中的 mixin
+- 自定义 hook 的优势：复用代码，让 setup 中逻辑更清晰
+
+### 10.toRef
+
+- 作用：创建一个 ref 对象，其 value 值指向另一个对象中的某个属性值
+- 语法：`const name = toRef(person, 'name')`
+- 应用：要将响应式对象中的某个属性单独提供给外部使用时
+- 扩展：`toRefs` 与 `toRef` 功能一致，但可批量创建多个 ref 对象，语法：`toRefs(person)`
+
+  ``` JS
+  import {reactive, toRef, toRefs} from 'vue'
+
+  export default {
+    setup (props, context) {
+      let person = reactive({
+        name: '张三',
+        age: 18,
+        job: {
+          j1: {
+            salary: 20
+          }
+        }
+      })
+      // 访问name2就相当于访问person.name 
+      const name2 = toRef(person, 'name')
+
+      return {
+        // name: toRef(person, 'name'),
+        // age: toRef(person, 'age'),
+        // salary: toRef(person.job.j1, 'salary')
+        ...toRefs(person)
+      }
+    }
+  }
+  ```
+
+## 其他 Composition API
+
+### 1.shallowReactive 与 shallowRef
+
+- shallowReactive：只处理对象最外层属性的响应式（浅响应式）
+- shallowRef：只处理基本数据类型的响应式，不进行对象响应式处理
+- 什么时候使用？
+  - 如果有一个对象数据，结构比较深，但变化时只是外层属性变化 ===> shallowReactive
+  - 如果有一个对象数据，后续功能不会修改该对象中的属性，而是生成新的对象替换 ===> shallowRef
