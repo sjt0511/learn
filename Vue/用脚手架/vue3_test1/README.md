@@ -402,3 +402,214 @@ npm run dev
 - 什么时候使用？
   - 如果有一个对象数据，结构比较深，但变化时只是外层属性变化 ===> shallowReactive
   - 如果有一个对象数据，后续功能不会修改该对象中的属性，而是生成新的对象替换 ===> shallowRef
+
+### 2.readonly 和 shallowReadonly
+
+- readonly：让一个响应式数据变为只读的（深只读）
+- shallowReadonly：让一个响应式数据变为只读的（浅只读）
+- 应用场景：不希望数据被修改时
+
+### 3.toRaw 和 markRow
+
+- toRow:
+  - 作用：将一个由 `reactive` 生成的响应式对象转为普通对象
+  - 使用场景：用于读取响应式对象对应的普通对象，对这个普通对象的所有操作，不会引起页面更新
+- markRow：
+  - 作用：标记一个对象，使其永远不会再成为响应式对象
+  - 应用场景：
+    1. 有些值不应被设为响应式的，如复杂的第三方类库等
+    2. 当渲染具有不可变数据源的大列表时，跳过响应式转换可以提高性能
+
+### 4.customRef
+
+- 作用：创建一个自定义的 ref，并对其依赖项跟踪和更新触发进行显示控制
+- 实现防抖效果：
+  
+  ``` JS
+  import { customRef, ref } from 'vue'
+  export default {
+    setup (props, context) {
+      // 自定义一个 ref 名为：myRef
+      function myRef (value) {
+        let timeout
+        return customRef((track, trigger) => {
+          return {
+            get () {
+              console.log(`有人从myRef这个容器中读取数据了，我把${value}给他了`)
+              // 通知Vue追踪value的变化（提前和get商量一下，让他认为这个value是有用的）
+              track()
+              return value
+            },
+            set (val) {
+              clearTimeout()
+              console.log(`有人把myRef这个容器中数据改为了：${val}`)
+              // setTimeOut实现防抖，input框快速输入
+              setTimeout(() => {
+                // 这里用到了闭包
+                value = val
+                // 通知Vue去重新解析模板
+                trigger()
+              }, 1000)
+            }
+          }
+        })
+      }
+
+      // let keyword = ref('hello') // 使用Vue提供的ref
+      let keyword = myRef('hello') // 使用自定义的 ref
+    }
+  }
+  ```
+
+### 5.provide 与 inject
+
+- 作用：实现祖孙组件间通信
+- 套路：祖组件有一个 `provide` 选项来提供数据，孙组件有一个 `inject` 选项来开始使用这些数据
+- 具体写法：
+  1. 祖组件中
+
+     ``` JS
+     setup() {
+       let car = reactive({ name: '奔驰', price: '40万' })
+       provide('car', car)
+     }
+     ```
+  
+  2. 孙组件中
+
+     ``` JS
+     setup() {
+       const car = inject('car')
+       return {car}
+     }
+     ```
+
+## Composition API 的优势
+
+### 1.Options API 存在的问题
+
+使用传统 Options API，新增或修改一个需求需要分别在 data, methods, computed 里修改
+
+### 2.Composition API 的有优势
+
+可以更优雅地组织我们的代码、函数，让相关功能地代码更加有序的组织在一起
+
+## 新的组件
+
+### 1.Fragment
+
+- 在 Vue2 中：组件必须有根标签
+- 在 Vue3 中：组件可以没有根标签，内部会将多个标签包含在一个 Fragment 虚拟元素中
+- 好处：减少标签层级，减少内存占用
+
+### 2.Teleport
+
+一种能够将组件html结构移动到指定位置的技术
+
+``` HTML
+<teleport to="移动位置">
+  <div v-if="isShow" class="mask">
+    <div class="dialog">
+      <h3>我是一个弹窗</h3>
+      <button @click="isShow=false">关闭弹窗</button>
+    </div>
+  </div>
+</teleport>
+```
+
+### 3.Suspense
+
+- 等待异步组件时渲染一些额外内容，让应用有更好的用户体验
+- 使用步骤：
+  - 异步引入组件
+
+    ``` JS
+    import { defineAsyncComponent } from 'vue'
+    const Child = defineAsyncComponent(() => import('./components/Child.vue'))
+    ```
+
+  - 使用 `Suspense` 包裹组件，并配置好 `default` 和 `fallback`
+
+    ``` HTML
+    <template>
+      <div class="app">
+        <h3>我是App组件</h3>
+        <Suspense>
+          <template #default>
+            <Child/>
+          </template>
+          <template #fallback>
+            <h3>加载中...</h3>
+          </template>
+        </Suspense>
+      </div>
+    </template>
+    ```
+
+## 其他
+
+### 1.全局 API 的转移
+
+- Vue2.x 有许多全局 API 和配置
+  - 例如：组测全局组件、注册全局指令等
+
+    ``` JS
+    // 全局注册组件
+    Vue.component('MyButton', {
+      data () {
+        count: 0
+      },
+      template: `<button @click="count++">Clicked {{count}} times.</button>`
+    })
+    // 全局注册指令
+    Vue.directive('focus', {
+      inserted: el => el.focus()
+    })
+    ```
+
+- Vue3 中对这些 API 做出了调整
+  - 将全局的 API，即：`Vue.xxx` 调整到应用实例（`app`）上
+
+    | 2.x 全局 API（Vue） | 3.x 实例 API（app） |
+    | ------------------ |---------------------|
+    | Vue.config.xxx     | app.config.xxx      |
+    | Vue.config.productionTip | 移除 |
+    | Vue.component | app.component |
+    | Vue.directive | app.directive |
+    | Vue.mixin     | app.mixin     |
+    | Vue.use       | app.use       |
+    | Vue.prototype | app.config.globalProperties |
+
+### 2.其他改变
+
+- data 选项始终被声明为一个函数
+- 过渡类名更改：
+  - Vue2.x
+
+     ``` CSS
+     .v-enter,
+     .v-leave-to {
+       opacity: 0;
+     }
+     .v-leave,
+     .v-enter-to {
+       opacity: 1;
+     }
+     ```
+
+  - Vue3
+
+     ``` CSS
+     .v-enter-from,
+     .v-leave-to {
+       opacity: 0;
+     }
+     .v-leave-from,
+     .v-enter-to {
+       opacity: 1;
+     }
+     ```
+
+- 移除 keyCode 作为 v-on 的修饰符，不再支持 `config.keyCodes`
+- 移除 `v-on.native` 修饰符，子组件在 `emits` 配置项里声明自定义事件
+- 移除过滤器：过滤器虽然方便，但他与要一个自定义语法，打破大括号内表达式“只是JavaScript”守卫假设。可以用计算属性代替过滤器
