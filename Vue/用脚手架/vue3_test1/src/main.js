@@ -2,6 +2,8 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 
+import './styles/index.scss'
+
 createApp(App).mount('#app')
 // 拆分写法
 // // 创建应用实例对象--app(类似于 Vue2 中的 vm，但 app 比 vm 更“轻”)
