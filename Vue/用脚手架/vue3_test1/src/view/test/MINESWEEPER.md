@@ -21,3 +21,22 @@
 ### 3. 具体实现
 
 生成一个 m*n 的方格
+
+### 知识点
+
+#### 1. v-model
+
+- v-model 的默认事件名和prop已更改
+  - prop: `value` ====> `modelValue`
+  - 事件: `input` ====> `update:modelValue`
+- v-bind 的 .sync 修饰符和组件的 model 选项已移除，可在 v-model 上加一个参数代替
+- 可以在同一个组件上使用多个 v-model 绑定
+- 可以自定义 v-model 修饰符
+
+  ``` HTML
+  <!-- 简写 -->
+  <ChildComponent v-model="pageTitle" v-model.title="pageTitle2"/>
+  <!-- 详细写法 -->
+  <ChildComponent :modelValue="pageTitle" @update:modelValue="pageTitle=$event"
+                  :title="pageTitle2" @update:title="pageTitle2=$event"/>
+  ```

@@ -76,6 +76,9 @@ npm run dev
 - Vue3 中一个新的配置项，是一个函数
 - 是所有 `Composition API` “表演的舞台”
 - 组件中用到的：数据、方法等，均要配在 `setup` 中
+- `setup` 函数的参数：
+  1. `props`：响应式的，当传入新的 prop 时，它将被更新。**不能使用 ES6 解构**，它会消除 prop 的响应性
+  2. `context`：一个普通 JavaScript 对象，暴露了其它可能在 setup 中有用的值（`attrs/slots/emit/expose`）
 - `setup` 函数的两种返回值：
   1. **返回一个对象：对象中的属性、方法，在模板中均可直接使用**
   2. 返回一个渲染函数：可以自定义渲染内容
