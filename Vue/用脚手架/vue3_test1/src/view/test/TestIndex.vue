@@ -15,11 +15,12 @@
     <p>{{ matrix_info }}</p>
     <ul class="test-index_matrix">
       <li v-for="(row, index) in matrix" :key="index" class="test-index_row">
-        <item-cell v-for="(cell, cindex) in row" v-model.modelValue="row[cindex]" :key="cindex"></item-cell>
+        <item-cell v-for="(cell, cindex) in row" v-model.modelValue="row[cindex]"
+                   :key="cindex" @speadOpen="spreadOpen(index, cindex)"></item-cell>
       </li>
     </ul>
   </div>
-  <footer>hhh <i class="fa fa-edit"></i></footer>
+  <footer>hhh</footer>
 </template>
 
 <script>
@@ -29,7 +30,7 @@ import ItemCell from './components/ItemCell.vue';
 export default {
   components: { CompTab, ItemCell },
   name: "TestIndex",
-  setup(props, context) {
+  setup() {
     const tab = reactive({
       data: [
         { label: "初级 9*9 10雷", value: 1, num: 10, m: 9, n: 9, mn: 81 },
@@ -42,7 +43,7 @@ export default {
 
     let matrix_info = computed(function () {
       let all = 0
-      let find = 0 
+      let find = 0
       matrix.forEach(row => {
           row.forEach(cell => {
               if (cell.value > 8) all++
@@ -55,7 +56,13 @@ export default {
       };
     });
 
-    function init(value) {
+    // 递归翻开 对于每一个已翻开数字，要去看它周围的一圈炸弹是不是足够了，足够了就翻开周围那些没翻开的
+    const spreadOpen = function (row, column) {
+      console.log(row, column)
+    }
+
+    // 初始化
+    const init = function (value) {
       tab.active = value;
       const find = tab.data.find((x) => x.value === value);
       matrix.length = 0;
@@ -117,18 +124,16 @@ export default {
           }
         }
       }
-
-      console.log("init", find);
     }
 
     init(1);
 
-    console.log("setup", props, context, matrix);
     return {
       tab,
       matrix,
       matrix_info,
       init,
+      spreadOpen
     };
   },
 };
