@@ -16,7 +16,7 @@
     <ul class="test-index_matrix">
       <li v-for="(row, index) in matrix" :key="index" class="test-index_row">
         <item-cell v-for="(cell, cindex) in row" v-model.modelValue="row[cindex]"
-                   :key="cindex" @speadOpen="spreadOpen(index, cindex)"></item-cell>
+                   :key="cindex" @open="open(index, cindex)" @spread-open="spreadOpen(index, cindex)"></item-cell>
       </li>
     </ul>
   </div>
@@ -27,6 +27,7 @@
 import { reactive, computed } from "vue";
 import CompTab from "../../components/CompTab.vue";
 import ItemCell from './components/ItemCell.vue';
+
 export default {
   components: { CompTab, ItemCell },
   name: "TestIndex",
@@ -37,6 +38,7 @@ export default {
         { label: "中级 12*9 20雷", value: 2, num: 20, m: 12, n: 9, mn: 108 },
       ],
       active: "",
+      activeItem: null
     });
 
     let matrix = reactive([]);
@@ -44,27 +46,106 @@ export default {
     let matrix_info = computed(function () {
       let all = 0
       let find = 0
-      matrix.forEach(row => {
-          row.forEach(cell => {
-              if (cell.value > 8) all++
+      let opened = 0
+      const list = []
+      matrix.forEach((row, rindex) => {
+          row.forEach((cell, cindex) => {
+              if (cell.value > 8) {
+                all++
+                list.push({ row: rindex, column: cindex })
+              }
               if (cell.value > 8 && isFinite(cell)) find++ // 标成9就是找到了
+              if (cell.open) opened++
           })
       })
       return {
         find,
-        all
+        all,
+        square: tab.activeItem.mn,
+        opened,
+        list
       };
     });
 
-    // 递归翻开 对于每一个已翻开数字，要去看它周围的一圈炸弹是不是足够了，足够了就翻开周围那些没翻开的
+    // 递归翻开 对于每一个已翻开数字，要去看它周围标的一圈炸弹正确数是不是足够了，足够了就翻开周围那些没翻开的
+    // 判断是否在边界内
+    const judgeBoundaryWithin = function (row, column) {
+      return row >= 0 && row < tab.activeItem.m && column >= 0 && column < tab.activeItem.n
+    }
+    // 1 查看是不是周围的雷都标出来了
+    const matchAllMine = function (row, column) {
+      const all = matrix[row][column].value
+      let count = 0
+      // 看周围是雷的有没有被标出雷
+      const judge = (row, column) => {
+        if (judgeBoundaryWithin(row,column)) { // 是一个合理的方格
+          if (matrix[row][column].value > 8 && matrix[row][column].flag) { // 是个雷并且标成了雷
+            matrix[row][column].value = 9
+            return 1
+          }
+        }
+        return 0
+      }
+      count = judge(row - 1, column - 1) + judge(row - 1, column) + judge(row - 1, column + 1) +
+              judge(row, column - 1) + judge(row, column + 1) +
+              judge(row + 1, column - 1) + judge(row + 1, column) + judge(row + 1, column + 1)
+      return count === all
+    }
+    // 2 翻开某个方格-返回值表示是否要进行递归
+    const openAround = function (row, column) {
+      // 在边界内&&没插旗&&没翻开
+      if (judgeBoundaryWithin(row, column) && !matrix[row][column].flag && !matrix[row][column].open) {
+        matrix[row][column].open = true
+        return true
+      }
+      return false
+    }
+    // 3 递归翻开一片
     const spreadOpen = function (row, column) {
-      console.log(row, column)
+      if (row < 0 || row >= tab.activeItem.m || column < 0 || column >= tab.activeItem.n) { // 到了方格板边界
+        return
+      }
+      if (matchAllMine(row, column)) { // 雷都标出了
+        // 翻开周围每个未被插旗的方格并执行递归展开
+        openAround(row - 1, column - 1) && spreadOpen(row - 1, column - 1)
+        openAround(row - 1, column) && spreadOpen(row - 1, column)
+        openAround(row - 1, column + 1) && spreadOpen(row - 1, column + 1)
+        openAround(row, column - 1) && spreadOpen(row, column - 1)
+        openAround(row, column + 1) && spreadOpen(row, column + 1)
+        openAround(row + 1, column - 1) && spreadOpen(row + 1, column - 1)
+        openAround(row + 1, column) && spreadOpen(row + 1, column)
+        openAround(row + 1, column + 1) && spreadOpen(row + 1, column + 1)
+      }
+    }
+
+    // 翻开一个方格
+    const open = function (row, column) {
+      matrix[row][column].open = true
+      if (matrix[row][column].value <= 8) { // 安全的-就执行一次递归翻开
+        spreadOpen(row, column)
+      } else { // 爆炸
+        matrix[row][column].err = '爆炸'
+        const list = matrix_info.value.list
+        for (let i = 0; i <list.length; i++) {
+          matrix[list[i].row][list[i].column].open = true
+          matrix[list[i].row][list[i].column].explose = true
+        }
+        // alert('失败')
+      }
     }
 
     // 初始化
+    // 1 标雷后计算雷数
+    const calcMine = (row, column) => {
+      if (judgeBoundaryWithin(row, column)) { // 是合理方格
+        matrix[row][column].value++
+      }
+    }
+    // 2 主体逻辑
     const init = function (value) {
       tab.active = value;
       const find = tab.data.find((x) => x.value === value);
+      tab.activeItem = find
       matrix.length = 0;
       for (let i = 0; i < find.m; i++) {
         const arr = []
@@ -86,39 +167,14 @@ export default {
             // 标雷
             matrix[row][column].value = Infinity;
             // 更新类周围的所有方格
-            // 有上排
-            if (row - 1 >= 0) {
-              if (column - 1 >= 0) {
-                // 上左
-                matrix[row - 1][column - 1].value++;
-              }
-              matrix[row - 1][column].value++; // 上中
-              if (column + 1 < find.n) {
-                // 上右
-                matrix[row - 1][column + 1].value++;
-              }
-            }
-            // 中排一定有
-            if (column - 1 >= 0) {
-              // 中左
-              matrix[row][column - 1].value++;
-            }
-            if (column + 1 < find.n) {
-              // 中右
-              matrix[row][column + 1].value++;
-            }
-            // 有下排
-            if (row + 1 < find.m) {
-              if (column - 1 >= 0) {
-                // 下左
-                matrix[row + 1][column - 1].value++;
-              }
-              matrix[row + 1][column].value++;
-              if (column + 1 < find.n) {
-                // 下右
-                matrix[row + 1][column + 1].value++;
-              }
-            }
+            calcMine(row - 1, column -1)
+            calcMine(row - 1, column)
+            calcMine(row - 1, column + 1)
+            calcMine(row, column - 1)
+            calcMine(row, column + 1)
+            calcMine(row + 1, column - 1)
+            calcMine(row + 1, column)
+            calcMine(row + 1, column + 1)
           } else {
               i--
           }
@@ -133,6 +189,7 @@ export default {
       matrix,
       matrix_info,
       init,
+      open,
       spreadOpen
     };
   },

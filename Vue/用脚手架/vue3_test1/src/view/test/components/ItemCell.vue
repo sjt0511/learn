@@ -1,8 +1,8 @@
 <template>
   <div :class="mainClass" @click.left="clickLeft" @contextmenu.prevent="clickRight" @dblclick.left="dblclickLeft">
+    <i class="fa fa-flag" v-if="item.flag"></i>
     <!-- 未翻开 -->
     <template v-if="!item.open">
-      <i class="fa fa-flag" v-if="item.flag"></i>
     </template>
     <template v-else-if="!item.value"></template>
     <template v-else-if="item.value <= 8">{{ item.value }}</template>
@@ -14,11 +14,10 @@
 
 <script>
 import { computed } from 'vue'
-import Utils from '../../../utils'
 
 export default {
   props: ['modelValue'],
-  emits: ['spreadOpen'],
+  emits: ['open', 'spread-open'],
   setup (props, context) {
     // console.log('ItemCell', props, context)
     // 样式
@@ -26,6 +25,8 @@ export default {
       const list = ['item-cell']
       !item.value.open && list.push('item-cell--close')
       item.value.flag && list.push('item-cell--flag')
+      item.value.explose && list.push('item-cell--explose') // 爆炸特效
+      item.value.err && list.push('item-cell--err') // 点错的那个
       return list
     })
 
@@ -40,9 +41,11 @@ export default {
 
     // 鼠标点击事件
     // 单击左键-未翻开的翻开
-    const clickLeft = Utils.debounce(function () {
-      item.value.open = true
-    }, 500)
+    const clickLeft = function () {
+      if (!item.value.open) {
+        context.emit('open', item.value)
+      }
+    }
     // 单击右键-对于未翻开的方格-插旗或者取消插旗
     const clickRight = function () {
       if (!item.value.open) {
@@ -52,7 +55,7 @@ export default {
     // 双击左键-在已翻开的数字方格内，执行一次摊开
     const dblclickLeft = function () {
       if (item.value.open) {
-        context.emit('spreadOpen', item.value)
+        context.emit('spread-open', item.value)
       }
     }
 
@@ -84,6 +87,13 @@ export default {
 
   &--flag {
     color: red;
+  }
+
+  &--err {
+    background: red;
+  }
+
+  &--explose {
   }
 }
 </style>
