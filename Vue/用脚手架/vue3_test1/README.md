@@ -616,3 +616,107 @@ npm run dev
 - 移除 keyCode 作为 v-on 的修饰符，不再支持 `config.keyCodes`
 - 移除 `v-on.native` 修饰符，子组件在 `emits` 配置项里声明自定义事件
 - 移除过滤器：过滤器虽然方便，但他与要一个自定义语法，打破大括号内表达式“只是JavaScript”守卫假设。可以用计算属性代替过滤器
+
+## Vue Router
+
+### 安装
+
+``` sh
+  # 对于Vue3.x安装4版本，Vue2.x安装3版本
+  npm install vue-router@4
+```
+
+### HTML
+
+``` HTML
+<script src="https://unpkg.com/vue@3"></script>
+<script src="https://unpkg.com/vue-router@4"></script>
+
+<div id="app">
+  <h1>Hello App!</h1>
+  <p>
+    <!--使用 router-link 组件进行导航 -->
+    <!--通过传递 `to` 来指定链接 -->
+    <!--`<router-link>` 将呈现一个带有正确 `href` 属性的 `<a>` 标签-->
+    <router-link to="/">Go to Home</router-link>
+    <router-link to="/about">Go to About</router-link>
+  </p>
+  <!-- 路由出口 -->
+  <!-- 路由匹配到的组件将渲染在这里 -->
+  <router-view></router-view>
+</div>
+```
+
+- `router-link`: 没有使用常规的`a`标签，Vue Router 可以在**不重新加载页面**的情况下更改 URL，处理 URL 的生成以及编码
+- `router-view`: 将显示与 url 对应的组件。可以把它放在任何地方，以适应布局
+- 总结来说，`router-link`控制显示那个组件，`router-view`就是显示组件的容器
+
+### JavaScript
+
+总结起来使用步骤：
+
+1. 定义路由组件，如 Home
+2. 定义路由 routes 配置项：每个路由都要映射到一个组件（理解成每一项都要有component配置项?）
+3. 创建路由实例 `VueRouter.createRouter(options)`
+4. 创建根实例，使用新创建的路由实例 `app.use(router)`(需要)，挂载根实例 `app.mount('#app')`
+
+可以把定义创建路由实例的代码放到一个js文件
+
+通过调用 `app.use(router)`，我们可以在任意组件中以 `this.$router` 的形式访问它，并且以 `this.$route` 的形式访问当前路由
+
+要在 setup 函数中访问路由，请调用 useRouter 或 useRoute 函数
+
+``` JS
+// 1. 定义路由组件.
+// 也可以从其他文件导入
+const Home = { template: '<div>Home</div>' }
+const About = { template: '<div>About</div>' }
+
+// 2. 定义一些路由
+// 每个路由都需要映射到一个组件。
+// 我们后面再讨论嵌套路由。
+const routes = [
+  { path: '/', component: Home },
+  { path: '/about', component: About },
+]
+
+// 3. 创建路由实例并传递 `routes` 配置
+// 你可以在这里输入更多的配置，但我们在这里
+// 暂时保持简单
+const router = VueRouter.createRouter({
+  // 4. 内部提供了 history 模式的实现。区别于vue2的mode，vue3中将使用history属性来决定采用哪种路由模式(createWebHashHistory, createWebHistory)
+  history: VueRouter.createWebHashHistory(),
+  // 区别于vue2的base，vue3中的基础路由路径将作为createWebHashHistory或者createWebHistory的唯一参数配置到路由中。
+  routes, // `routes: routes` 的缩写
+})
+
+// 5. 创建并挂载根实例
+const app = Vue.createApp({})
+//确保 _use_ 路由实例使
+//整个应用支持路由。
+app.use(router)
+
+app.mount('#app')
+
+// 现在，应用已经启动了！
+```
+
+``` JS
+// index.vue
+// vue-router库当中暴露了useRouter和useRoute两个方法供组件使用，还暴露有其他方法。
+import { useRouter, useRoute } from 'vue-router';
+import { onMounted, getCurrentInstance } from 'vue';
+
+export default {
+  setup() {
+    const { proxy } = getCurrentInstance();
+    const router = useRouter();
+    const route = useRoute();
+    onMounted(() => {
+      console.log(proxy.$router === router) // true
+      console.log(route) // {path, params, query...}
+    });
+  }
+};
+
+```

@@ -1,13 +1,14 @@
 <template>
-  <TestIndex></TestIndex>
+  <router-view></router-view>
+  <!-- <TestIndex></TestIndex> -->
 </template>
 
 <script>
-import TestIndex from './view/test/TestIndex.vue'
+// import TestIndex from './view/test/TestIndex.vue'
 export default {
   name: 'App',
   components: {
-    TestIndex
+    // TestIndex
   }
 }
 </script>
