@@ -1,0 +1,41 @@
+/**
+    变量集合
+    颜色相关 https://mycolor.space/
+*/
+
+@import './function.less';
+
+@primay: #FF6F91;
+
+#colors() {
+    primary: @primay;
+    primary2: #FF9671;
+    primary3: #D65DB1;
+    orange1: #FFC75F;
+    yellow1: #F9F871;
+    purple1: #845EC2;
+    purple2: #B39CD0;
+    purple3: #FBEAFF;
+    blue1: #2C73D2;
+    blue2: #0081CF;
+    blue3: #0089BA;
+    blue4: #008E9B;
+    green1: #008F7A;
+    green2: #C4FCEF;
+    green3: #4D8076;
+    red1: #C34A36;
+    red2: #FF8066;
+    red3: #D43725;
+    font: #444;
+    font3: #333;
+    font6: #666;
+    font9: #999;
+    fontA: #aaa;
+    fontE: #eee;
+    pure: #fff;
+    dark: #000;
+}
+
+#getShadow() {
+    primary:  0 size(4) size(8) #colors[primary];
+}

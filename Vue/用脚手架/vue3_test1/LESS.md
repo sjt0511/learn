@@ -359,3 +359,7 @@ nav ul {
 ## 作用域 Scope
 
 ## 导入 Importing
+
+### 疑点
+
+#### 1. Less 如何实现像 Scss 那样定义 `全局函数`，比如 `@function color($name:primary)`
