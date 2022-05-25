@@ -1,0 +1,15 @@
+@function color($name: primary) {
+    @return map-get($colors , $name);
+}
+
+@function linear($name: primary) {
+    @return map_get($linear, $c);
+}
+  
+@function getShadow($name: primary) {
+    @return map_get($shadow, $c);
+}
+
+@function size($size: 14) {
+    @return $size / 100 + rem
+};

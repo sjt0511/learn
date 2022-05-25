@@ -1,0 +1,34 @@
+/**
+    定义样式全局函数
+    vue.config.js配置可使用JavaScript
+*/
+// js函数-- padding: ~`size(10)`; => padding: 10px;
+.lessFunc() {
+    @functions: `(function() {
+        this.size = function (size) {
+            return size + 'px'
+        }
+    })()`
+}
+
+.lessFunc();
+
+// 简易用mixins实现响应式布局-- #size(padding, 40)
+#size (@name, @px) {
+    // @{name}: (@px / 100) * 1rem
+    @{name}: unit((@px / 100), rem)
+}
+
+// mixins考虑要实现传入多个参数的情况
+// #size2(@name, @rest...) {
+//     n: length(@rest);
+//     list: @rest;
+//     value: each(@rest, .(@value, @key, @index) {
+//         @value;
+//     });
+// }
+
+// 命名参数指定默认值之后，不用在意顺序
+// #border (@color: #fff, @size: 2, @type: solid) {
+//     border: unit(@size, rem) @type @color;
+// }

@@ -1,0 +1,58 @@
+@import './function.scss';
+
+$primary: #F46E61; // 主色
+$colors: (
+      primary:$primary,
+      //primary0:mix($primary, #401, 90%), // #e26359
+      primary0: #E34D59,
+      // #e26359
+      //primary1:mix($primary, #fff, 90%), // #f57d71
+      primary1:#F5C8A0,
+      // #f57d71
+      primary2:mix($primary, #fff, 80%),
+      // #f68b81
+      //primary3:mix($primary, #fff, 70%), // #f79a90
+      primary3:#F77563,
+      // #f79a90
+      primary4:#EE7BA4,
+      primary5:#897EF7,
+      danger:#E5515A,
+      danger1:#FC2C48,
+      success:#73D13D,
+      warning:#F8E71C,
+      warning2:#FF6C00,
+      font:#1A1E24,
+      font0:#000,
+      font3:#333,
+      font6:#666,
+      font9:#999,
+      fonta:#aaa,
+      fontc:#ccc,
+      line: rgba($primary, 0.5),
+      border:#F6D8CB,
+      back:#FCF4EE,
+      back1:#FFE7E5,
+      pure:#FFF,
+      dark:#000,
+      box:#F5C8A0,
+      box2:#FFDBBF,
+      mask:rgba(0, 0, 0, .7),
+); // 颜色
+
+$shadow: (
+      box: 0 size(6) size(16) rgba(color(box), .47),
+      box2: 0 size(6) size(12) color(box2),
+      window: 0 size(8) size(15) rgba(color(dark), .3),
+      btn: 0 size(6) size(12) rgba(#E5515A, .34),
+      btns: 0 size(-12) size(12) #F9E9DD,
+      dark: 0 size(4) size(8) rgba(color(dark), .2),
+      danger: 0 size(4) size(8) rgba(color(danger), .3),
+      footer: 0 0 size(28) rgba(color(), .5)
+); // 阴影
+
+$linear: (
+      primary:linear-gradient(180deg, color(primary2), color(primary)),
+      light:linear-gradient(180deg, color(pure), color(primary1)),
+      btn:linear-gradient(90deg, color(primary3), color(primary0)),
+      btn2:linear-gradient(-90deg, color(primary3), color(primary0)),
+); // 渐变

@@ -13,7 +13,7 @@
 import { reactive } from 'vue'
 import { useRouter } from 'vue-router'
 export default {
-  setup () {
+  setup() {
     /* 数据 */
     const menu = reactive([
       { label: '扫雷', value: 'test', router: { name: 'test' } }
@@ -40,13 +40,15 @@ export default {
 }
 </script>
 
-<style lang="less">
+<style lang="scss">
 .home {
+  font-size: size(24);
+  color: color();
   // padding: ~`size(10)`;
-  #size(padding, 40);
+  // #size(padding, 40);
 
   &_header {
-    color: #colors[font];
+    // color: #colors[font];
   }
 }
 </style>
