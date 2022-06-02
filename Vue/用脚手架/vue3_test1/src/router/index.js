@@ -18,7 +18,13 @@ const test = [
         path: '/test',
         name: 'test',
         component: () => import('../view/test/TestIndex.vue'),
-        meta: { title: '扫雷' }
+        meta: { title: '扫雷' },
+        props ($route) {
+            console.log(111, $route.params)
+            return {
+                item: $route.params
+            }
+        }
     }
 ]
 

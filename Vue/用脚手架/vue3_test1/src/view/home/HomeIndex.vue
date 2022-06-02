@@ -16,7 +16,7 @@ export default {
   setup() {
     /* 数据 */
     const menu = reactive([
-      { label: '扫雷', value: 'test', router: { name: 'test' } }
+      { label: '扫雷', value: 'test', router: { name: 'test', params: { test: { label: 'test', value: 1 }, list: [1,2,3], key: 1, obj: {name: 'pp', infos: {height:158, sex: '女'}} } } }
     ])
 
     /* vue-router相关 */

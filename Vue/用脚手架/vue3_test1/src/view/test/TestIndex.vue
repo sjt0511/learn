@@ -25,13 +25,21 @@
 
 <script>
 import { reactive, computed } from "vue";
+import { useRoute } from "vue-router"
 import CompTab from "../../components/CompTab.vue";
 import ItemCell from './components/ItemCell.vue';
 
 export default {
   components: { CompTab, ItemCell },
   name: "TestIndex",
-  setup() {
+  props: {
+    item: Object
+  },
+  setup(props) {
+    const route = useRoute()
+    console.log('props接收item', props.item)
+    console.log('this.$route.params', route.params)
+
     const tab = reactive({
       data: [
         { label: "初级 9*9 10雷", value: 1, num: 10, m: 9, n: 9, mn: 81 },

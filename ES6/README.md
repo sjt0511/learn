@@ -168,3 +168,306 @@ let [x = 1, y = x] = [2];    // x=2; y=2
 let [x = 1, y = x] = [1, 2]; // x=1; y=2
 let [x = y, y = 1] = [];     // ReferenceError: y is not defined
 ```
+
+### 对象的解构赋值
+
+对象的解构赋值的内部机制，是先找到同名属性，然后再赋给对应的变量。真正被赋值的是后者，而不是前者。
+
+支持嵌套，左侧是匹配模式。**对象的解构赋值可以取到继承的属性。**
+
+``` JS
+let { foo: foo, bar: bar } = { foo: 'aaa', bar: 'bbb' };
+
+// foo是匹配的模式，baz才是变量
+let { foo: baz } = { foo: 'aaa', bar: 'bbb' };
+baz // "aaa"
+foo // error: foo is not defined
+
+// 嵌套
+let obj = {
+  p: [
+    'Hello',
+    { y: 'World' }
+  ]
+};
+// 这时p是模式，不是变量，因此不会被赋值
+let { p: [x, { y }] } = obj;
+x // "Hello"
+y // "World"
+// 这样就可以获取到p
+let { p, p: [x, { y }] } = obj;
+x // "Hello"
+y // "World"
+p // ["Hello", {y: "World"}]
+
+// 如果解构模式是嵌套的对象，而且子对象所在的父属性不存在，那么将会报错
+let {foo: {bar}} = {baz: 'baz'}; // 报错
+
+// 对象obj1的原型对象是obj2。foo属性不是obj1自身的属性，而是继承自obj2的属性，解构赋值可以取到这个属性。
+const obj1 = {};
+const obj2 = { foo: 'bar' };
+Object.setPrototypeOf(obj1, obj2);
+const { foo } = obj1;
+foo // "bar"
+
+// 可以对数组进行对象属性的解构
+
+```
+
+#### 默认值
+
+默认值生效的条件是，对象的属性值严格等于undefined
+
+``` JS
+let { message: msg = 'Something went wrong', x = 1, y = 2 } = {x: null, y: undefined};
+msg // "Something went wrong"
+x // null
+y // undefined
+```
+
+### 字符串解构赋值
+
+字符串被转换成了一个类似数组的对象
+
+类似数组的对象都有一个length属性，因此还可以对这个属性解构赋值。
+
+``` JS
+const [a, b, c, d, e] = 'hello';
+a // "h"
+b // "e"
+c // "l"
+d // "l"
+e // "o"
+
+const { length : len } = 'hello';
+len // 5
+```
+
+### 数值和布尔值的解构赋值
+
+如果等号右边是数值和布尔值，则会先转为对象
+
+只要等号右边的值不是对象或数组，就先将其转为对象。由于undefined和null无法转为对象，所以对它们进行解构赋值，都会报错。
+
+``` JS
+// 数值和布尔值的包装对象都有toString属性，因此变量s都能取到值
+let {toString: s} = 123;
+s === Number.prototype.toString // true
+let {toString: s} = true;
+s === Boolean.prototype.toString // true
+
+let { prop: x } = undefined; // TypeError
+let { prop: y } = null; // TypeError
+```
+
+### 函数参数的解构赋值
+
+``` JS
+// 函数move的参数是一个对象，通过对这个对象进行解构，得到变量x和y的值。如果解构失败，x和y等于默认值。
+function move({x = 0, y = 0} = {}) {
+  return [x, y];
+}
+// 这是为函数move的参数指定默认值，而不是为变量x和y指定默认值
+function move({x, y} = { x: 0, y: 0 }) {
+  return [x, y];
+}
+```
+
+### 用途
+
+- 交换变量的值
+  
+  ``` JS
+  let x = 1;
+  let y = 2;
+  [x, y] = [y, x];
+  ```
+
+- 从函数返回多个值：函数只能返回一个值，如果要返回多个值，只能将它们放在数组或对象里返回，再解构赋值，取出这些值
+  
+  ``` JS
+  // 返回一个数组
+  function example() {
+    return [1, 2, 3];
+  }
+  let [a, b, c] = example();
+
+  // 返回一个对象
+  function example() {
+    return {
+      foo: 1,
+      bar: 2
+    };
+  }
+  let { foo, bar } = example();
+  ```
+
+- 函数参数的定义：解构赋值可以方便地将一组参数与变量名对应起来
+  
+  ``` JS
+  // 参数是一组有次序的值
+  function f([x, y, z]) { ... }
+  f([1, 2, 3]);
+
+  // 参数是一组无次序的值
+  function f({x, y, z}) { ... }
+  f({z: 3, y: 2, x: 1});
+  ```
+
+- 提取 JSON 数据
+  
+  ``` JS
+  let jsonData = {
+    id: 42,
+    status: "OK",
+    data: [867, 5309]
+  };
+
+  let { id, status, data: number } = jsonData;
+
+  console.log(id, status, number);
+  // 42, "OK", [867, 5309]
+  ```
+
+- 函数参数的默认值：指定参数的默认值，就避免了在函数体内部再写`var foo = config.foo || 'default foo'`
+  
+  ``` JS
+  jQuery.ajax = function (url, {
+    async = true,
+    beforeSend = function () {},
+    cache = true,
+    complete = function () {},
+    crossDomain = false,
+    global = true,
+    // ... more config
+  } = {}) {
+    // ... do stuff
+  };
+  ```
+
+- 遍历 Map 结构：任何部署了 Iterator 接口的对象，都可以用for...of循环遍历。Map 结构原生支持 Iterator 接口，配合变量的解构赋值，获取键名和键值就非常方便。
+  
+  ``` JS
+  const map = new Map();
+  map.set('first', 'hello');
+  map.set('second', 'world');
+
+  for (let [key, value] of map) {
+    console.log(key + " is " + value);
+  }
+  // first is hello
+  // second is world
+  ```
+
+- 输入模块的指定方法：加载模块时，往往需要指定输入哪些方法。解构赋值使得输入语句非常清晰。
+  
+  ``` JS
+  const { SourceMapConsumer, SourceNode } = require("source-map");
+  ```
+
+## 字符串扩展
+
+### 字符串的 Unicode 表示法
+
+允许采用`\uxxxx`形式表示一个字符，其中`xxxx`表示字符的 Unicode 码点
+
+- 这种表示法只限于码点在`\u0000`~`\uFFFF`之间的字符。超出这个范围的字符，必须用**两个双字节**的形式表示
+- 直接在`\u`后面跟上超过`0xFFFF`的数值（比如`\u20BB7`），JavaScript 会理解成`\u20BB+7`。由于`\u20BB`是一个不可打印字符，所以只会显示一个空格，后面跟着一个7。
+- **改进：只要将码点放入大括号，就能正确解读该字符**
+- 大括号表示法 与 四字节的 UTF-16 编码是等价的
+- 共有6种表示字符串的方法
+
+``` JS
+"\u0061"
+// "a"
+
+"\uD842\uDFB7"
+// "𠮷"
+
+"\u20BB7"
+// " 7"
+
+"\u{20BB7}"
+// "𠮷"
+
+"\u{41}\u{42}\u{43}"
+// "ABC"
+
+let hello = 123;
+hell\u{6F} // 123
+
+'\u{1F680}' === '\uD83D\uDE80'
+// true
+
+// 6种表示字符串的方法
+'\z' === 'z'  // true
+'\172' === 'z' // true----这是八进制？？？？？？
+'\x7A' === 'z' // true
+'\u007A' === 'z' // true
+'\u{7A}' === 'z' // true
+```
+
+### 字符串的遍历器接口
+
+ES6 为字符串添加了遍历器接口，使得字符串可以被for...of循环遍历。
+
+除了遍历字符串，这个遍历器最大的优点是**可以识别大于0xFFFF的码点**，传统的for循环无法识别这样的码点。
+
+``` JS
+// 字符串text只有一个字符，但是for循环会认为它包含两个字符（都不可打印），而for...of循环会正确识别出这一个字符
+let text = String.fromCodePoint(0x20BB7);
+
+for (let i = 0; i < text.length; i++) {
+  console.log(text[i]);
+}
+// " "
+// " "
+
+for (let i of text) {
+  console.log(i);
+}
+// "𠮷"
+```
+
+### 直接输入 U+2028 和 U+2029
+
+JavaScript 字符串允许直接输入字符，以及输入字符的转义形式
+
+JavaScript 规定有5个字符，不能在字符串里面直接使用，只能使用转义形式——字符串里面不能直接包含反斜杠，一定要转义写成`\\`或者`\u005c`。
+
+- U+005C：反斜杠（reverse solidus)
+- U+000D：回车（carriage return）
+- U+2028：行分隔符（line separator）
+- U+2029：段分隔符（paragraph separator）
+- U+000A：换行符（line feed）
+
+ **而 JSON 格式允许字符串里面直接使用 U+2028（行分隔符）和 U+2029（段分隔符）**，服务器输出的 JSON 被JSON.parse解析，就有可能直接报错 —— 为了消除这个报错，ES2019 允许 JavaScript 字符串直接输入 U+2028（行分隔符）和 U+2029（段分隔符）—— 模板字符串现在就允许直接输入这两个字符，正则表达式依然不允许直接输入这两个字符
+
+### JSON.stringify() 的改造
+
+JSON 数据必须是 UTF-8 编码，UTF-8 标准规定，0xD800到0xDFFF之间的码点，不能单独使用，必须配对使用
+
+JSON.stringify()的问题在于，它可能返回0xD800到0xDFFF之间的单个码点
+
+ES2019 改变了JSON.stringify()的行为。如果遇到0xD800到0xDFFF之间的单个码点，或者不存在的配对形式，它会返回转义字符串，留给应用自己决定下一步的处理。
+
+``` JS
+JSON.stringify('\u{D834}') // ""\\uD834""
+JSON.stringify('\uDF06\uD834') // ""\\udf06\\ud834""
+```
+
+### 模板字符串
+
+模板字符串（template string）是增强版的字符串，用反引号（`）标识。它可以当作普通字符串使用，也可以用来定义多行字符串，或者在字符串中嵌入变量
+
+如果在模板字符串中需要使用反引号，则前面要用反斜杠转义。
+
+### 模板编译
+
+### 标签模板
+
+它可以紧跟在一个函数名后面，该函数将被调用来处理这个模板字符串
+
+标签模板其实不是模板，而是函数调用的一种特殊形式。“标签”指的就是`函数`，紧跟在后面的模板字符串就是它的`参数`
+
+### 模板字符串的限制
