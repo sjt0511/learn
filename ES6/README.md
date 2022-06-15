@@ -471,3 +471,216 @@ JSON.stringify('\uDF06\uD834') // ""\\udf06\\ud834""
 标签模板其实不是模板，而是函数调用的一种特殊形式。“标签”指的就是`函数`，紧跟在后面的模板字符串就是它的`参数`
 
 ### 模板字符串的限制
+
+### 字符串新增方法
+
+#### String.fromCodePoint()
+
+- `String.fromCharCode() ES5`: 从 Unicode 码点返回对应字符，但是这个方法不能识别码点大于0xFFFF的字符
+- `String.fromCodePoint`: 可以识别大于0xFFFF的字符；多个参数，则它们会被合并成一个字符串返回
+
+``` JS
+String.fromCharCode(0x20BB7)
+// "ஷ"
+
+String.fromCodePoint(0x20BB7)
+// "𠮷"
+String.fromCodePoint(0x78, 0x1f680, 0x79) === 'x\uD83D\uDE80y'
+// true
+```
+
+#### String.raw()
+
+返回一个斜杠都被转义（即斜杠前面再加一个斜杠）的字符串，往往用于模板字符串的处理方法
+
+如果原字符串的斜杠已经转义，那么String.raw()会进行再次转义
+
+``` JS
+String.raw`Hi\n${2+3}!`
+// 实际返回 "Hi\\n5!"，显示的是转义后的结果 "Hi\n5!"
+
+String.raw`Hi\u000A!`;
+// 实际返回 "Hi\\u000A!"，显示的是转义后的结果 "Hi\u000A!"
+
+String.raw`Hi\\n`
+// 返回 "Hi\\\\n"
+
+String.raw`Hi\\n` === "Hi\\\\n" // true
+```
+
+- 可以作为处理模板字符串的基本方法，它会将所有变量替换，而且对斜杠进行转义
+- 本质上是一个正常的函数，只是专用于模板字符串的标签函数
+- 如果写成正常函数的形式，它的第一个参数，应该是一个具有raw属性的对象，且raw属性的值应该是一个数组，对应模板字符串解析后的值
+
+``` JS
+// `foo${1 + 2}bar${2 + 3}hello`
+// 等同于
+String.raw({ raw: ['foo', 'bar', 'hello'] }, 1 + 2, 2 + 3) // "foo3bar"
+
+// 基本实现
+String.raw = function (strings, ...values) {
+  let output = '';
+  let index;
+  for (index = 0; index < values.length; index++) {
+    output += strings.raw[index] + values[index];
+  }
+
+  output += strings.raw[index]
+  return output;
+}
+```
+
+#### str.codePointAt()
+
+`codePointAt()`方法，能够正确处理 4 个字节储存的字符
+
+- JavaScript 内部，字符以 UTF-16 的格式储存，每个字符固定为2个字节
+- 需要4个字节储存的字符（Unicode 码点大于0xFFFF的字符），JavaScript 会认为它们是两个字符
+- `字符串长度`会误判为2，而且`charAt()`方法无法读取整个字符，`charCodeAt()`方法只能分别返回前两个字节和后两个字节的值
+
+- codePointAt()方法返回的是码点的十进制值
+- codePointAt()方法的参数，是字符在字符串中的位置（从 0 开始）
+- 使用for...of循环，因为它会正确识别 32 位的 UTF-16 字符。
+- 使用扩展运算符（...）进行展开运算
+
+``` JS
+// 汉字“𠮷”（注意，这个字不是“吉祥”的“吉”）的码点是0x20BB7
+// UTF-16 编码为0xD842 0xDFB7（十进制为55362 57271），需要4个字节储存
+let s = '𠮷a';
+
+s.length // 3
+s.charAt(0) // ''
+s.charAt(1) // ''
+s.charAt(2) // 'a'
+s.charCodeAt(0) // 55362
+s.charCodeAt(1) // 57271
+s.charCodeAt(2) // 97
+
+// codePointAt()方法的参数，是字符在字符串中的位置（从 0 开始）,JavaScript 将“𠮷a”视为三个字符
+// codePointAt 方法在第一个字符上，正确地识别了“𠮷”，返回了它的十进制码点 134071（即十六进制的20BB7）
+// 在第二个字符（即“𠮷”的后两个字节）和第三个字符“a”上，codePointAt()方法的结果与charCodeAt()方法相同
+s.codePointAt(0) // 134071
+s.codePointAt(1) // 57271
+s.codePointAt(2) // 97
+
+// toString(16)转为十六进制
+s.codePointAt(0).toString(16) // "20bb7"
+s.codePointAt(2).toString(16) // "61"
+
+// for of循环
+for (let ch of s) {
+  console.log(ch.codePointAt(0).toString(16))
+  // 20bb7
+  // 61
+}
+
+// ...扩展运算符
+let arr = [...'𠮷a']; // arr.length === 2
+arr.forEach(
+  ch => console.log(ch.codePointAt(0).toString(16))
+  // 20bb7
+  // 61
+);
+```
+
+#### str.normalize()
+
+将字符的不同表示方法统一为同样的形式，这称为 Unicode 正规化；
+可以接受一个参数来指定normalize的方式
+
+- NFC，默认参数，表示“标准等价合成”:多个简单字符的合成字符,视觉和语义上的等价
+- NFD，表示“标准等价分解”:在标准等价的前提下，返回合成字符分解的多个简单字符
+- NFKC，表示“兼容等价合成”:语义上存在等价，但视觉上不等价，比如“囍”和“喜喜”
+- NFKD，表示“兼容等价分解”:在兼容等价的前提下，返回合成字符分解的多个简单字符
+
+normalize方法目前不能识别三个或三个以上字符的合成
+
+``` JS
+'\u01D1'.normalize() === '\u004F\u030C'.normalize() // true
+
+// NFC参数返回字符的合成形式，NFD参数返回字符的分解形式
+'\u004F\u030C'.normalize('NFC').length // 1
+'\u004F\u030C'.normalize('NFD').length // 2
+```
+
+#### str.indexOf()|str.includes()|str.startsWith()|str.endsWith()
+
+indexOf()是JS提供的确定一个字符串是否包含在另一个字符串中
+
+- str.includes(xxx)：返回Boolean，是否找到参数字符串
+- str.startsWith(xxx)：返回Boolean，参数字符串是否在头部
+- str.endsWith(xxx)：返回Boolean，参数字符串是否在尾部
+- 支持第二个参数，表示开始搜索的位置
+
+``` JS
+// endsWith针对前n个字符, 其他两个指从第n个位置直到字符串结束
+let s = 'Hello world!';
+
+s.startsWith('world', 6) // true
+s.endsWith('Hello', 5) // true
+s.includes('Hello', 6) // false
+```
+
+#### str.repeat()
+
+repeat方法返回一个新字符串，表示将原字符串重复n次
+
+- 参数是小数，会被取整，大于0的向下取整
+- 参数范围是 (-1, 有限数)：(-1,0)都被视作0，0 到-1 之间的小数，取整以后等于-0，repeat视同为 0
+- 参数是负数或者Infinity，会报错
+- (-1,1)范围内和NaN，等同于0
+- 参数是字符串，则会先转换成数字
+
+``` JS
+const str = 'na'
+
+str.repeat(2) // 'nana'
+str.repeat(Infinity) // RangeError
+str.repeat(-1) // RangeError
+str.repeat(-0.9) // ''
+str.repeat(NaN) // ''
+str.repeat('na') // ''
+str.repeat('3') // 'nanana'
+```
+
+#### str.padStart()|str.padEnd()
+
+字符串补全长度,会在头部或尾部补全。`padStart()`用于头部补全，`padEnd()`用于尾部补全
+
+- 第一个参数：字符串补全生效的最大长度，第二个参数：用来补全的字符串
+- 原字符串长 >= 最大长度，则字符串补全不生效，返回原字符串
+- 补全的字符串与原字符串，两者的长度之和超过了最大长度，则会截去超出位数的补全字符串
+- 省略第二个参数，默认使用空格补全长度
+
+``` JS
+'x'.padStart(5, 'ab') // 'ababx'
+'x'.padEnd(4, 'ab') // 'xaba'
+'xxx'.padStart(2, 'ab') // 'xxx'
+'abc'.padStart(10, '0123456789') // '0123456abc'
+'x'.padStart(4) // '   x'
+
+// padStart()的常见用途是为数值补全指定位数
+'123456'.padStart(10, '0') // "0000123456"
+// 提示字符串格式
+'09-12'.padStart(10, 'YYYY-MM-DD') // "YYYY-09-12"
+```
+
+#### str.trimStart()|str.trimEnd()
+
+#### str.matchAll()
+
+#### str.replaceAll()
+
+searchValue是搜索模式，可以是一个字符串，也可以是一个全局的正则表达式（带有g修饰符）[否则报错]
+
+#### str.at()
+
+返回参数指定位置的字符，支持负索引（即倒数的位置）。
+
+如果参数位置超出了字符串范围，at()返回undefined。
+
+``` JS
+const str = 'hello';
+str.at(1) // "e"
+str.at(-1) // "o"
+```
