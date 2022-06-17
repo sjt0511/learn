@@ -694,3 +694,28 @@ str.at(-1) // "o"
   - 参数是一个正则表达式，**不允许此时使用第二个参数添加修饰符，会报错**
 - ES6
   -参数是正则表达式时，允许添加修饰符，会覆盖原有修饰符
+
+``` JS
+const regex = /xyz/i;
+
+// 等价写法
+const regex = new RegExp('xyz', 'i');
+const  regex = new RegExp(/xyz/i);
+// ES5: const regex = new RegExp(/xyz/, 'i'); // Uncaught TypeError: Cannot supply flags when constructing one RegExp from another
+const regex = new RegExp(/xyz/ig, 'i');
+```
+
+#### 字符串的正则方法
+
+ES6前，字符串对象共有4种方法可使用正则：match()|replace()|search()|split()
+
+ES6 将这 4 个方法，在语言内部全部调用RegExp的实例方法，从而做到所有与正则相关的方法，全都定义在RegExp对象上:
+
+- `String.prototype.match` 调用 `RegExp.prototype[Symbol.match]`
+- `String.prototype.replace` 调用 `RegExp.prototype[Symbol.replace]`
+- `String.prototype.search` 调用 `RegExp.prototype[Symbol.search]`
+- `String.prototype.split` 调用 `RegExp.prototype[Symbol.split]`
+
+#### u修饰符
+
+ES6 对正则表达式添加了u修饰符，含义为“Unicode 模式”，用来正确处理大于\uFFFF的 Unicode 字符
