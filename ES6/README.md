@@ -719,3 +719,356 @@ ES6 将这 4 个方法，在语言内部全部调用RegExp的实例方法，从�
 #### u修饰符
 
 ES6 对正则表达式添加了u修饰符，含义为“Unicode 模式”，用来正确处理大于\uFFFF的 Unicode 字符
+
+### 数值扩展
+
+#### 二进制和八进制表示法
+
+ES6 二进制、八进制写法：用前缀0b（或0B）和0o（或0O）表示
+
+``` JS
+0b111110111 === 503 // true
+0o767 === 503 // true
+
+// 非严格模式
+(function(){
+  console.log(0o11 === 011);
+})() // true
+
+// 严格模式
+(function(){
+  'use strict';
+  console.log(0o11 === 011);
+})() // Uncaught SyntaxError: Octal literals are not allowed in strict mode.
+
+
+Number('0b111')  // 7
+Number('0o10')  // 8
+```
+
+#### 数值分隔符
+
+ES2021，允许 JavaScript 的数值使用下划线（_）作为分隔符。没有指定间隔的位数，可以每三位添加一个分隔符，也可以每一位、每两位、每四位添加一个
+
+- 不能放在数值的最前面（leading）或最后面（trailing）。
+- 不能两个或两个以上的分隔符连在一起。
+- 小数点的前后不能有分隔符。
+- 科学计数法里面，表示指数的e或E前后不能有分隔符。
+- 数值分隔符只是一种书写便利，对于 JavaScript 内部数值的存储和输出，并没有影响
+
+``` JS
+let budget = 1_000_000_000_000;
+budget === 10 ** 12 // true
+
+// 除了十进制，其他进制的数值也可以使用分隔符
+// 二进制
+0b1010_0001_1000_0101
+// 十六进制
+0xA0_B0_C0
+```
+
+#### Number.isNaN()|Number.isFinite()
+
+- 如果参数类型不是数值，`Number.isFinite`一律返回false
+- 如果参数类型不是NaN，`Number.isNaN`一律返回false
+
+与传统的全局方法`isFinite()`和`isNaN()`的区别在于，传统方法先调用Number()将非数值的值转为数值，再进行判断，而这两个新方法只对数值有效，其他类型都返回false
+
+#### Number.parseInt()|Number.parseFloat()
+
+将全局方法parseInt()和parseFloat()，移植到Number对象上面，行为完全保持不变。逐步减少全局性方法，使得语言逐步模块化
+
+``` JS
+// ES5的写法
+parseInt('12.34') // 12
+parseFloat('123.45#') // 123.45
+
+// ES6的写法
+Number.parseInt('12.34') // 12
+Number.parseFloat('123.45#') // 123.45
+
+Number.parseInt === parseInt // true
+Number.parseFloat === parseFloat // true
+```
+
+#### Number.isInteger()
+
+- `Number.isInteger()`用来判断一个数值是否为整数
+- JavaScript 内部，整数和浮点数采用的是同样的储存方法，所以 25 和 25.0 被视为同一个值
+- 参数不是数值，Number.isInteger返回false
+-  JavaScript 采用 IEEE 754 标准，数值存储为64位双精度格式，数值精度最多可以达到 53 个二进制位（1 个隐藏位与 52 个有效位）。如果数值的精度超过这个限度，第54位及后面的位就会被丢弃，这种情况下，Number.isInteger可能会误判。
+
+[数值精度53位](https://segmentfault.com/a/1190000014641114)
+
+#### Number.EPSILON
+
+它表示 1 与大于 1 的最小浮点数之间的差，是 JavaScript 能够表示的最小精度
+
+``` JS
+Number.EPSILON === Math.pow(2, -52)
+// true
+Number.EPSILON
+// 2.220446049250313e-16
+Number.EPSILON.toFixed(20)
+// "0.00000000000000022204"
+
+function withinErrorMargin (left, right) {
+  return Math.abs(left - right) < Number.EPSILON * Math.pow(2, 2);
+}
+
+0.1 + 0.2 === 0.3 // false
+withinErrorMargin(0.1 + 0.2, 0.3) // true
+
+1.1 + 1.3 === 2.4 // false
+withinErrorMargin(1.1 + 1.3, 2.4) // true
+```
+
+#### 安全整数和 Number.isSafeInteger()
+
+JavaScript 能够准确表示的整数范围在-2^53到2^53之间（不含两个端点），超过这个范围，无法精确表示这个值
+
+- `Number.MAX_SAFE_INTEGER` & `Number.MIN_SAFE_INTEGER`：avaScript 能够准确表示的整数范围的上下限
+- `Number.isSafeInteger()`用来判断一个整数是否落在准确表示范围之内
+- 验证运算结果是否落在安全整数的范围内，不要只验证运算结果，而要同时验证参与运算的每个值
+
+``` JS
+Math.pow(2, 53) === Math.pow(2, 53) + 1
+// true
+
+Number.MAX_SAFE_INTEGER === Math.pow(2, 53) - 1
+// true
+Number.MAX_SAFE_INTEGER === 9007199254740991
+// true
+Number.MIN_SAFE_INTEGER === -Number.MAX_SAFE_INTEGER
+// true
+Number.MIN_SAFE_INTEGER === -9007199254740991
+// true
+```
+
+#### Math对象的扩展
+
+1. `Math.trunc()`: 除一个数的小数部分，返回整数部分
+    - 对于非数值，内部采用`Number()`将其先转为数值
+    - 对于空值和无法截取整数的值，返回 `NaN`
+    - trunc：截断
+
+    ``` JS
+    Math.trunc(4.1) // 4
+    Math.trunc(-4.9) // -4
+   
+    Math.trunc('123.456') // 123
+    Math.trunc(true) //1
+    Math.trunc(false) // 0
+    Math.trunc(null) // 0
+   
+    Math.trunc(NaN);      // NaN
+    Math.trunc('foo');    // NaN
+    Math.trunc();         // NaN
+    Math.trunc(undefined) // NaN
+   
+    Math.trunc = Math.trunc || function(x) {
+      return x < 0 ? Math.ceil(x) : Math.floor(x);
+    };
+    ```
+
+2. `Math.sign()`: 判断一个数到底是正数、负数、还是零。对于非数值，会先将其转换为数值。
+    - 参数为正数，返回+1；
+    - 参数为负数，返回-1；
+    - 参数为 0，返回0；
+    - 参数为-0，返回-0;
+    - 其他值，返回NaN
+
+    ``` JS
+    Math.sign(-5) // -1
+    Math.sign(5) // +1
+    Math.sign(0) // +0
+    Math.sign(-0) // -0
+    Math.sign(NaN) // NaN
+
+    Math.sign('')  // 0
+    Math.sign(true)  // +1
+    Math.sign(false)  // 0
+    Math.sign(null)  // 0
+    Math.sign('9')  // +1
+    Math.sign('foo')  // NaN
+    Math.sign()  // NaN
+    Math.sign(undefined)  // NaN
+
+    Math.sign = Math.sign || function(x) {
+      x = +x; // convert to a number
+      if (x === 0 || isNaN(x)) {
+        return x;
+      }
+      return x > 0 ? 1 : -1;
+    };
+    ```
+
+3. `Math.cbrt()`: 计算一个数的立方根
+4. `Math.clz32()`: 将参数转为 32 位无符号整数的形式，然后返回这个 32 位值里面有多少个前导 0
+    - 左移运算符（<<）与Math.clz32方法直接相关
+    - 对于小数，Math.clz32方法只考虑整数部分。
+    - 对于空值或其他类型的值，Math.clz32方法会将它们先转为数值
+    - count leading zero bits in 32-bit binary representation of a number
+
+    ``` JS
+    Math.clz32(0) // 32
+    Math.clz32(1) // 31
+    Math.clz32(1000) // 22
+    Math.clz32(0b01000000000000000000000000000000) // 1
+    Math.clz32(0b00100000000000000000000000000000) // 2
+
+    Math.clz32(1 << 1) // 30
+    Math.clz32(1 << 2) // 29
+    Math.clz32(1 << 29) // 2
+
+    Math.clz32(3.2) // 30
+
+    Math.clz32() // 32
+    Math.clz32(NaN) // 32
+    Math.clz32(Infinity) // 32
+    Math.clz32(null) // 32
+    Math.clz32('foo') // 32
+    Math.clz32([]) // 32
+    Math.clz32({}) // 32
+    Math.clz32(true) // 31
+    ```
+
+5. `Math.imul()`: 两个数以 32 位带符号整数形式相乘的结果，返回的也是一个 32 位的带符号整数
+    - 大多数情况下，该方法等同于`(a * b)|0`的效果（超过 32 位的部分溢出）
+    - 引入原因：JavaScript 有精度限制，超过 2 的 53 次方的值无法精确表示
+    - 对于很大的数的乘法，低位数值往往都是不精确的，`Math.imul`方法可以返回正确的低位数值
+    - **用于大数乘法返回准确的低位数值**
+
+    ``` JS
+    Math.imul(2, 4)   // 8
+    Math.imul(-1, 8)  // -8
+    Math.imul(-2, -2) // 4
+
+    (0x7fffffff * 0x7fffffff)|0 // 0：乘积超过了 2 的 53 次方，JavaScript 无法保存额外的精度，就把低位的值都变成了 0
+    Math.imul(0x7fffffff, 0x7fffffff) // 1
+    ```
+
+6. `Math.fround()`: 返回一个数的32位单精度浮点数形式
+7. `Math.hypot()`: 返回所有参数的平方和的平方根
+    - 如果参数不是数值，Math.hypot方法会将其转为数值
+    - 只要有一个参数无法转为数值，就会返回 NaN
+
+    ``` JS
+    Math.hypot(3, 4);        // 5
+    Math.hypot(3, 4, 5);     // 7.0710678118654755
+    Math.hypot();            // 0
+    Math.hypot(NaN);         // NaN
+    Math.hypot(3, 4, 'foo'); // NaN
+    Math.hypot(3, 4, '5');   // 7.0710678118654755
+    Math.hypot(-3);          // 3
+    ```
+
+8. `Math.expm1()`: Math.expm1(x)返回 e^x - 1，即 `Math.exp(x)` - 1
+9. `Math.log1p()`: 返回1 + x的自然对数，即`Math.log(1 + x)`。如果x小于-1，返回NaN。
+
+    ``` JS
+    Math.log1p(1)  // 0.6931471805599453
+    Math.log1p(0)  // 0
+    Math.log1p(-1) // -Infinity
+    Math.log1p(-2) // NaN
+    ```
+
+10. `Math.log10()`: 返回以 10 为底的x的对数。如果x小于 0，则返回 NaN
+11. `Math.log2()`: 返回以 2 为底的x的对数。如果x小于 0，则返回 NaN
+12. 双曲函数：
+    - `Math.sinh(x)` 返回x的双曲正弦
+    - `Math.cosh(x)` 返回x的双曲余弦
+    - `Math.tanh(x)` 返回x的双曲正切
+    - `Math.asinh(x)` 返回x的反双曲正弦
+    - `Math.acosh(x)` 返回x的反双曲余弦
+    - `Math.atanh(x)` 返回x的反双曲正切
+
+#### BigInt 数据类型
+
+JavaScript 所有数字都保存成64位浮点数
+
+- 数值的精度只能到 53 个二进制位（相当于 16 个十进制位）
+- 大于或等于2的1024次方的数值，JavaScript 无法表示，会返回Infinity
+- ES2020 引入大整数
+
+- BigInt 只用来表示整数，没有位数的限制
+- 为了与 Number 类型区别，BigInt 类型的数据必须添加后缀`n`
+- 可以使用各种进制表示，都要加上后缀`n`
+- BigInt 与普通整数是两种值，它们之间并不相等
+- typeof 123n === 'bigint'
+- BigInt 可以使用负号（-），**但是不能使用正号（+）**，因为会与 asm.js 冲突
+
+#### BigInt() 函数
+
+可以生成 BigInt 类型的数值
+
+- BigInt()函数必须有参数，而且参数必须可以正常转为数值且不能是小数，否则报错
+- 字符串123n无法解析成 Number 类型
+
+``` JS
+new BigInt() // TypeError
+BigInt(undefined) //TypeError
+BigInt(null) // TypeError
+BigInt('123n') // SyntaxError
+BigInt('abc') // SyntaxError
+
+BigInt(1.5) // RangeError
+BigInt('1.5') // SyntaxError
+```
+
+BigInt 继承了 Object 对象的两个实例方法
+
+- BigInt.prototype.toString()
+- BigInt.prototype.valueOf()
+
+还继承了 Number 对象的一个实例方法
+
+- BigInt.prototype.toLocaleString()
+
+提供了三个静态方法
+
+- BigInt.asUintN(width, BigInt)： 给定的 BigInt 转为 0 到 2width - 1 之间对应的值。
+- BigInt.asIntN(width, BigInt)：给定的 BigInt 转为 -2width - 1 到 2width - 1 - 1 之间对应的值。
+- BigInt.parseInt(string[, radix])：近似于Number.parseInt()，将一个字符串转换成指定进制的 BigInt。
+
+``` JS
+const max = 2n ** (64n - 1n) - 1n;
+
+BigInt.asIntN(64, max)
+// 9223372036854775807n
+BigInt.asIntN(64, max + 1n)
+// -9223372036854775808n
+BigInt.asUintN(64, max + 1n)
+// 9223372036854775808n
+```
+
+可以使用Boolean()、Number()和String()这三个方法，将 BigInt 可以转为布尔值、数值和字符串类型。取反运算符（!）也可以将 BigInt 转为布尔值
+
+``` JS
+Boolean(0n) // false
+Boolean(1n) // true
+Number(1n)  // 1
+String(1n)  // "1"
+
+!0n // true
+!1n // false
+```
+
+几乎所有的数值运算符都可以用在 BigInt，有两个例外：
+
+- 不带符号的右移位运算符>>>
+- 一元的求正运算符+
+
+- BigInt 不能与普通数值进行混合运算
+- BigInt 如果与|0进行运算会报错
+- BigInt 与字符串混合运算时，会先转为字符串，再进行运算
+
+``` JS
+0n < 1 // true
+0n < true // true
+0n == 0 // true
+0n == false // true
+0n === 0 // false
+
+'' + 123n // "123"
+```
