@@ -138,3 +138,121 @@ const go = function*(){
 const obj = {a: 1, b: 2};
 let arr = [...obj]; // TypeError: Cannot spread non-iterable object
 ```
+
+## Array.from()
+
+用于将两类对象转为真正的数组：`类似数组的对象（array-like object）`和可遍历`（iterable）的对象`（包括 ES6 新增的数据结构 Set 和 Map）。
+
+- 只要是部署了 Iterator 接口的数据结构，Array.from()都能将其转为数组
+- 扩展运算符背后调用的是遍历器接口（Symbol.iterator），如果一个对象没有部署这个接口，就无法转换。Array.from()方法还支持类似数组的对象。
+- 所谓类似数组的对象，本质特征只有一点，即**必须有length属性**。因此，任何有length属性的对象，都可以通过Array.from()方法转为数组，而此时扩展运算符就无法转换
+- Array.from()的另一个应用是，将字符串转为数组，然后返回字符串的长度。因为它能正确处理各种 Unicode 字符，可以避免 JavaScript 将大于\uFFFF的 Unicode 字符，算作两个字符的 bug。
+
+参数：
+
+1. 第一个参数，需要转换为数组的对象
+2. 第二个参数，作用类似于数组的map()方法，用来对每个元素进行处理，将处理后的值放入返回的数组
+3. 第三个参数，如果map()函数里面用到了this关键字，还可以传入Array.from()的第三个参数，用来绑定this
+
+``` JS
+let arrayLike = {
+    '0': 'a',
+    '1': 'b',
+    '2': 'c',
+    length: 3
+};
+// ES5 的写法
+var arr1 = [].slice.call(arrayLike); // ['a', 'b', 'c']
+// ES6 的写法
+let arr2 = Array.from(arrayLike); // ['a', 'b', 'c']
+
+
+Array.from('hello')
+// ['h', 'e', 'l', 'l', 'o']
+let namesSet = new Set(['a', 'b'])
+Array.from(namesSet) // ['a', 'b']
+
+Array.from({ length: 3 });
+// [ undefined, undefined, undefined ]
+
+// 对于还没有部署该方法的浏览器，可以用Array.prototype.slice()方法替代
+const toArray = (() =>
+  Array.from ? Array.from : obj => [].slice.call(obj)
+)();
+
+Array.from(arrayLike, x => x * x);
+// 等同于
+Array.from(arrayLike).map(x => x * x);
+Array.from([1, 2, 3], (x) => x * x)
+// [1, 4, 9]
+
+// 字符串转数组
+function countSymbols(string) {
+  return Array.from(string).length;
+}
+```
+
+## Array.of()
+
+用于将一组值，转换为数组。Array.of()总是返回参数值组成的数组
+
+- 弥补数组构造函数Array()的不足。因为参数个数的不同，会导致Array()的行为有差异
+- new Array()：没有参数、一个参数、三个参数时，返回的结果都不一样。
+  - 只有当参数个数不少于 2 个时，Array()才会返回由参数组成的新数组。
+  - 参数只有一个时，如果是字符串就返回[字符串]；如果是数字，**表示的是数组长度**--必须是非负整数，否则会报错
+- Array.of()基本上可以用来替代Array()或new Array()，并且不存在由于参数不同而导致的重载
+
+``` JS
+Array() // []
+Array(3) // [, , ,]
+Array(3, 11, 8) // [3, 11, 8]
+Array(-1) // Uncaught RangeError: Invalid array length
+Array('3') // ['3']
+
+Array.of() // []
+Array.of(undefined) // [undefined]
+Array.of(1) // [1]
+Array.of(1, 2) // [1, 2]
+```
+
+## arr.copyWithin()
+
+在当前数组内部，将指定位置的成员复制到其他位置（会覆盖原有成员），然后返回当前数组。使用这个方法，会修改当前数组。
+
+`Array.prototype.copyWithin(target, start = 0, end = this.length)`
+
+- target（必需）：从该位置开始替换数据。如果为负值，表示倒数。
+- start（可选）：从该位置开始读取数据，默认为 0。如果为负值，表示从末尾开始计算。
+- end（可选）：到该位置前停止读取数据，默认等于数组长度。如果为负值，表示从末尾开始计算。
+- 这三个参数都应该是数值，如果不是，会自动转为数值
+
+``` JS
+// 将3号位复制到0号位
+[1, 2, 3, 4, 5].copyWithin(0, 3, 4)
+// [4, 2, 3, 4, 5]
+
+// -2相当于3号位，-1相当于4号位
+[1, 2, 3, 4, 5].copyWithin(0, -2, -1)
+// [4, 2, 3, 4, 5]
+
+// 将3号位复制到0号位
+[].copyWithin.call({length: 5, 3: 1}, 0, 3)
+// {0: 1, 3: 1, length: 5}
+
+// 将2号位到数组结束，复制到0号位
+let i32a = new Int32Array([1, 2, 3, 4, 5]);
+i32a.copyWithin(0, 2);
+// Int32Array [3, 4, 5, 4, 5]
+
+// 对于没有部署 TypedArray 的 copyWithin 方法的平台
+// 需要采用下面的写法
+[].copyWithin.call(new Int32Array([1, 2, 3, 4, 5]), 0, 3, 4);
+// Int32Array [4, 2, 3, 4, 5]
+```
+
+## 实例方法：find()，findIndex()，findLast()，findLastIndex()
+
+- find()方法，用于找出第一个符合条件的数组成员。它的参数是一个回调函数，所有数组成员依次执行该回调函数，直到找出第一个返回值为true的成员，然后返回该成员。如果没有符合条件的成员，则返回undefined。
+- 回调函数可以接受三个参数，依次为当前的值、当前的位置和原数组。
+
+
