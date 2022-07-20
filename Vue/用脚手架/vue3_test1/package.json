@@ -12,6 +12,7 @@
     "less": "^4.1.2",
     "less-loader": "^11.0.0",
     "node-sass": "^7.0.1",
+    "pinia": "^2.0.16",
     "sass-loader": "^12.6.0",
     "vue": "^3.2.13",
     "vue-router": "^4.0.15",
