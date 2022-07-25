@@ -163,3 +163,116 @@ let aClone = { ...a };
 // 等同于
 let aClone = Object.assign({}, a);
 ```
+
+## 对象新增方法
+
+### Object.assign(target, source)
+
+用于对象的合并，将源对象（source）的所有`自身可枚举属性（包含属性名为Symbol的属性）`，复制到目标对象（target）
+
+- 非对象参数如果作为target参数，会先转为对象，由于undefined和null无法转成对象，就会报错。
+- 非对象参数如果作为source参数，先转为对象，对于无法转为对象的就跳过
+- 布尔值、数值、字符串分别转成对应的包装对象，可以看到它们的原始值都在包装对象的内部属性[[PrimitiveValue]]上面，这个属性是不会被Object.assign()拷贝的
+- 只有字符串的包装对象，会产生可枚举的实义属性，那些属性则会被拷贝。
+- Object.assign()拷贝的属性是有限制的，只拷贝源对象的`自身属性`（不拷贝继承属性），也不拷贝不可枚举的属性（enumerable: false）
+- 属性名为 `Symbol` 值的属性，也会被Object.assign()拷贝
+
+``` JS
+const v1 = 'abc';
+const v2 = true;
+const v3 = 10;
+const obj = Object.assign({}, v1, v2, v3);
+console.log(obj); // { "0": "a", "1": "b", "2": "c" }
+
+Object(true) // {[[PrimitiveValue]]: true}
+Object(10)  //  {[[PrimitiveValue]]: 10}
+Object('abc') // {0: "a", 1: "b", 2: "c", length: 3, [[PrimitiveValue]]: "abc"}
+
+
+Object.assign({ a: 'b' }, { [Symbol('c')]: 'd' })
+// { a: 'b', Symbol(c): 'd' }
+```
+
+#### 注意点
+
+1. **浅拷贝：**如果源对象某个属性的值是对象，那么目标对象拷贝得到的是这个对象的引用
+2. **同名属性的替换：**嵌套的对象，一旦遇到同名属性，Object.assign()的处理方法是替换，而不是添加。
+3. **数组的处理：**Object.assign()可以用来处理数组，但是会把数组视为对象
+4. **取值函数的处理：**Object.assign()只能进行值的复制，如果要复制的值是一个取值函数，那么将求值后再复制。Object.assign()不会复制这个取值函数，只会拿到值以后，将这个值复制过去
+
+``` JS
+// 浅拷贝
+const obj1 = {a: {b: 1}};
+const obj2 = Object.assign({}, obj1);
+obj1.a.b = 2;
+obj2.a.b // 2
+
+// 同名属性的替换：target对象的a属性被source对象的a属性整个替换掉了，而不会得到{ a: { b: 'hello', d: 'e' } }的结果
+const target = { a: { b: 'c', d: 'e' } }
+const source = { a: { b: 'hello' } }
+Object.assign(target, source) // { a: { b: 'hello' } }
+
+// 数组的处理：Object.assign()把数组视为属性名为 0、1、2 的对象，因此源数组的 0 号属性4覆盖了目标数组的 0 号属性1。
+Object.assign([1, 2, 3], [4, 5])
+// [4, 5, 3]
+
+// 取值函数的处理：source对象的foo属性是一个取值函数，Object.assign()不会复制这个取值函数，只会拿到值以后，将这个值复制过去
+const source = {
+  get foo() { return 1 }
+};
+const target = {};
+Object.assign(target, source)
+// { foo: 1 }
+```
+
+#### 常见用途
+
+1. **为对象添加属性**
+2. **为对象添加方法**
+3. **克隆对象**
+4. **合并多个对象**
+5. **为属性指定默认值**
+
+``` JS
+// 为对象添加属性
+class Point {
+  constructor(x, y) {
+    Object.assign(this, {x, y});
+  }
+}
+
+// 为对象添加方法
+Object.assign(SomeClass.prototype, {
+  someMethod(arg1, arg2) {
+    ···
+  },
+  anotherMethod() {
+    ···
+  }
+});
+// 等同于下面的写法
+SomeClass.prototype.someMethod = function (arg1, arg2) {
+  ···
+};
+SomeClass.prototype.anotherMethod = function () {
+  ···
+};
+
+// 克隆对象
+function clone(origin) {
+  return Object.assign({}, origin);
+}
+// 采用这种方法克隆，只能克隆原始对象自身的值，不能克隆它继承的值。如果想要保持继承链，可以采用下面的代码。
+function clone(origin) {
+  let originProto = Object.getPrototypeOf(origin);
+  return Object.assign(Object.create(originProto), origin);
+}
+
+// 合并多个对象
+// 将多个对象合并到某个对象
+const merge =
+  (target, ...sources) => Object.assign(target, ...sources);
+// 要返回一个新对象
+const merge =
+  (...sources) => Object.assign({}, ...sources);  
+```

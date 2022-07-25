@@ -8,7 +8,7 @@
           </li>
       </ul> -->
     <comp-tab
-      v-model:modelValue="tab.active"
+      v-model="tab.active"
       :list="tab.data"
       @doTab="init"
     ></comp-tab>
