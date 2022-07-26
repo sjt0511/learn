@@ -276,3 +276,140 @@ const merge =
 const merge =
   (...sources) => Object.assign({}, ...sources);  
 ```
+
+### Object.getOwnPropertyDescriptors()
+
+ES5 的`Object.getOwnPropertyDescriptor()`：返回某个**对象属性**的描述对象（descriptor）
+
+ES2017 引入了`Object.getOwnPropertyDescriptors()`方法，返回**指定对象所有自身属性**（非继承属性）的描述对象
+
+- 目的：主要是为了解决Object.assign()无法正确拷贝get属性和set属性的问题。
+  - Object.assign方法总是拷贝一个属性的值，而不会拷贝它背后的赋值方法或取值方法。
+  - Object.getOwnPropertyDescriptors()方法配合Object.defineProperties()方法，就可以实现正确拷贝。
+- 配合Object.create()方法，将对象属性克隆到一个新对象。这属于浅拷贝。
+- 可以实现一个对象继承另一个对象。
+  - ES6 规定__proto__只有浏览器要部署，其他环境不用部署
+
+``` JS
+const obj = {
+  foo: 123,
+  get bar() { return 'abc' }
+};
+
+Object.getOwnPropertyDescriptors(obj)
+// { foo:
+//    { value: 123,
+//      writable: true,
+//      enumerable: true,
+//      configurable: true },
+//   bar:
+//    { get: [Function: get bar],
+//      set: undefined,
+//      enumerable: true,
+//      configurable: true } }
+```
+
+``` JS
+// 正确拷贝get和set属性
+const source = {
+  set foo(value) {
+    console.log(value);
+  }
+};
+const target1 = {};
+Object.assign(target1, source);
+Object.getOwnPropertyDescriptor(target1, 'foo')
+// { value: undefined,
+//   writable: true,
+//   enumerable: true,
+//   configurable: true }
+
+
+const target2 = {};
+Object.defineProperties(target2, Object.getOwnPropertyDescriptors(source));
+Object.getOwnPropertyDescriptor(target2, 'foo')
+// { get: undefined,
+//   set: [Function: set foo],
+//   enumerable: true,
+//   configurable: true }
+```
+
+``` JS
+// 克隆
+const clone = Object.create(Object.getPrototypeOf(obj),
+  Object.getOwnPropertyDescriptors(obj));
+// 或者
+const shallowClone = (obj) => Object.create(
+  Object.getPrototypeOf(obj),
+  Object.getOwnPropertyDescriptors(obj)
+);
+```
+
+``` JS
+// 继承
+// 1 老写法
+const obj = {
+  __proto__: prot,
+  foo: 123,
+};
+
+// 2 ES6 规定__proto__只有浏览器要部署，其他环境不用部署。如果去除__proto__，上面代码就要改成下面这样。
+const obj = Object.create(prot);
+obj.foo = 123;
+//   或者
+const obj = Object.assign(
+  Object.create(prot),
+  {
+    foo: 123,
+  }
+);
+
+// 3 Object.getOwnPropertyDescriptors()
+const obj = Object.create(
+  prot,
+  Object.getOwnPropertyDescriptors({
+    foo: 123,
+  })
+);
+```
+
+### __proto__属性，Object.setPrototypeOf()，Object.getPrototypeOf()
+
+JavaScript 语言的对象继承是通过原型链实现的。以下为操作原型对象
+
+#### __proto__属性
+
+读取或设置当前对象的原型对象（prototype）。目前，所有浏览器（包括 IE11）都部署了这个属性。
+
+标准明确规定，只有浏览器必须部署这个属性，其他运行环境不一定需要部署，而且新的代码最好认为这个属性是不存在的
+
+而是使用下面的Object.setPrototypeOf()（写操作）、Object.getPrototypeOf()（读操作）、Object.create()（生成操作）代替。
+
+``` JS
+// __proto__调用的是Object.prototype.__proto__
+Object.defineProperty(Object.prototype, '__proto__', {
+  get() {
+    let _thisObj = Object(this);
+    return Object.getPrototypeOf(_thisObj);
+  },
+  set(proto) {
+    if (this === undefined || this === null) {
+      throw new TypeError();
+    }
+    if (!isObject(this)) {
+      return undefined;
+    }
+    if (!isObject(proto)) {
+      return undefined;
+    }
+    let status = Reflect.setPrototypeOf(this, proto);
+    if (!status) {
+      throw new TypeError();
+    }
+  },
+});
+
+function isObject(value) {
+  return Object(value) === value;
+}
+```
