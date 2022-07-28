@@ -617,6 +617,194 @@ npm run dev
 - 移除 `v-on.native` 修饰符，子组件在 `emits` 配置项里声明自定义事件
 - 移除过滤器：过滤器虽然方便，但他与要一个自定义语法，打破大括号内表达式“只是JavaScript”守卫假设。可以用计算属性代替过滤器
 
+## 单文件组件 `<script setup>`
+
+`<script setup>` 中的代码会在每次组件实例被创建的时候执行
+
+### 顶层的绑定会被暴露给模板
+
+任何在 `<script setup>` 声明的顶层的绑定 (包括变量，函数声明，以及 import 引入的内容) 都能在模板中直接使用
+
+### 响应式
+
+### 使用组件
+
+`<script setup>` 范围里的值也能被直接作为自定义组件的标签名使用
+
+将 MyComponent 看做被一个变量所引用。如果你使用过 JSX，在这里的使用它的心智模型是一样的。其 kebab-case 格式的 `<my-component>` 同样能在模板中使用。不过，我们强烈建议使用 PascalCase 格式以保持一致性。同时也有助于区分原生的自定义元素。
+
+``` HTML
+<script setup>
+import MyComponent from './MyComponent.vue'
+</script>
+
+<template>
+  <MyComponent />
+</template>
+```
+
+#### 动态组件
+
+由于组件被引用为变量而不是作为字符串键来注册的，在 `<script setup>` 中要使用动态组件的时候，就应该使用动态的 `:is` 来绑定：
+
+``` HTML
+<script setup>
+import Foo from './Foo.vue'
+import Bar from './Bar.vue'
+</script>
+
+<template>
+  <component :is="Foo" />
+  <component :is="someCondition ? Foo : Bar" />
+</template>
+```
+
+#### 递归组件
+
+$\color{red}{？？？应用场景}$
+
+一个单文件组件可以通过它的文件名被其自己所引用。例如：名为 FooBar.vue 的组件可以在其模板中用 `<FooBar/>` 引用它自己。
+
+请注意这种方式相比于 import 导入的组件优先级更低。如果有命名的 import 导入和组件的推断名冲突了，可以使用 import 别名导入：`import { FooBar as FooBarChild } from './components'`
+
+#### 命名空间组件
+
+可以使用带点 `.` 的组件标记，例如 `<Foo.Bar>` 来引用嵌套在对象属性中的组件。这在需要从单个文件中导入多个组件的时候非常有用
+
+``` JS
+<script setup>
+import * as Form from './form-components'
+</script>
+
+<template>
+  <Form.Input>
+    <Form.Label>label</Form.Label>
+  </Form.Input>
+</template>
+```
+
+### 使用自定义指令
+
+全局注册的自定义指令将以符合预期的方式工作，且本地注册的指令可以直接在模板中使用，就像上文所提及的组件一样。
+
+但这里有一个需要注意的限制：**必须以 `vNameOfDirective` 的形式来命名本地自定义指令，以使得它们可以直接在模板中使用。**
+
+``` HTML
+<script setup>
+const vMyDirective = {
+  beforeMount: (el) => {
+    // 在元素上做些操作
+  }
+}
+</script>
+<template>
+  <h1 v-my-directive>This is a Heading</h1>
+</template>
+```
+
+``` HTML
+<script setup>
+  // 导入的指令同样能够工作，并且能够通过重命名来使其符合命名规范
+  import { myDirective as vMyDirective } from './MyDirective.js'
+</script>
+```
+
+### `defineProps` 和 `defineEmits`
+
+在 `<script setup>` 中必须使用 `defineProps` 和 `defineEmits` API 来声明 `props` 和 `emits` ，它们具备完整的类型推断并且在 `<script setup>` 中是直接可用的
+
+- defineProps 和 defineEmits 都是只在 `<script setup>` 中才能使用的**编译器宏**。他们不需要导入且会随着 `<script setup>` 处理过程一同被编译掉。
+- defineProps 接收与 props 选项相同的值，defineEmits 也接收 emits 选项相同的值。
+- defineProps 和 defineEmits 在选项传入后，会提供恰当的类型推断。
+- 传入到 `defineProps` 和 `defineEmits` 的选项会从 `setup` 中提升到模块的范围。因此，传入的选项不能引用在 `setup` 范围中声明的局部变量。这样做会引起编译错误。但是，它可以引用导入的绑定，因为它们也在模块范围内。
+
+``` HTML
+<script setup>
+const props = defineProps({
+  foo: String
+})
+
+const emit = defineEmits(['change', 'delete'])
+// setup code
+</script>
+```
+
+### `defineExpose`
+
+使用 `<script setup>` 的组件是默认关闭的，也即通过模板 `ref` 或者 `$parent` 链获取到的组件的公开实例，不会暴露任何在 `<script setup>` 中声明的绑定。
+
+为了在 `<script setup>` 组件中明确要暴露出去的属性，使用 `defineExpose` 编译器宏：
+
+当父组件通过模板 ref 的方式获取到当前组件的实例，获取到的实例会像这样 { a: number, b: number } (ref 会和在普通实例中一样被自动解包)
+
+``` HTML
+<script setup>
+import { ref } from 'vue'
+
+const a = 1
+const b = ref(2)
+
+defineExpose({
+  a,
+  b
+})
+</script>
+```
+
+### `useSlots` 和 `useAttrs`
+
+在 `<script setup>` 使用 `slots` 和 `attrs` 的情况应该是很罕见的，因为可以在模板中通过 `$slots` 和 `$attrs` 来访问它们。在你的确需要使用它们的罕见场景中，可以分别用 `useSlots` 和 `useAttrs` 两个辅助函数：
+
+`useSlots` 和 `useAttrs` 是真实的运行时函数，它会返回与 `setupContext.slots` 和 `setupContext.attrs` 等价的值，同样也能在普通的组合式 API 中使用
+
+``` HTML
+<script setup>
+import { useSlots, useAttrs } from 'vue'
+
+const slots = useSlots()
+const attrs = useAttrs()
+</script>
+```
+
+### 与普通的 `<script>` 一起使用
+
+`<script setup>` 可以和普通的 `<script>` 一起使用。普通的 `<script>` 在有这些需要的情况下或许会被使用到：
+
+- 无法在 `<script setup>` 声明的选项，例如 `inheritAttrs` 或通过插件启用的自定义的选项。
+- 声明命名导出。
+- 运行副作用或者创建只需要执行一次的对象。
+
+``` HTML
+<script>
+// 普通 <script>, 在模块范围下执行(只执行一次)
+runSideEffectOnce()
+
+// 声明额外的选项
+export default {
+  inheritAttrs: false,
+  customOptions: {}
+}
+</script>
+
+<script setup>
+// 在 setup() 作用域中执行 (对每个实例皆如此)
+</script>
+```
+
+### 顶层 `await`
+
+`<script setup>` 中可以使用顶层 `await`。结果代码会被编译成 `async setup()`
+
+另外，`await` 的表达式会自动编译成在 `await` 之后保留当前组件实例上下文的格式。$\color{red}{？？？看不懂}$
+
+**`async setup()` 必须与 `Suspense` `组合使用，Suspense` 目前还是处于实验阶段的特性。我们打算在将来的某个发布版本中开发完成并提供文档 - 如果你现在感兴趣，可以参照 tests 看它是如何工作的。**
+
+``` HTML
+<script setup>
+const post = await fetch(`/api/post/1`).then(r => r.json())
+</script>
+```
+
 ## Vue Router
 
 ### 安装
