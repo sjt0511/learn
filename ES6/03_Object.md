@@ -413,3 +413,223 @@ function isObject(value) {
   return Object(value) === value;
 }
 ```
+
+#### Object.setPrototypeOf(object, prototype)
+
+（推荐）设置一个对象的原型对象（prototype），返回参数对象本身
+
+- 如果第一个参数不是对象，会自动转为对象。但是由于返回的还是第一个参数，所以这个操作不会产生任何效果。
+- 由于undefined和null无法转为对象，所以如果第一个参数是undefined或null，就会报错。
+
+``` JS
+// 格式
+Object.setPrototypeOf(object, prototype)
+
+// 用法
+const o = Object.setPrototypeOf({}, null);
+
+// 等同于
+function setPrototypeOf(obj, proto) {
+  obj.__proto__ = proto;
+  return obj;
+}
+```
+
+``` JS
+let proto = {};
+let obj = { x: 10 };
+Object.setPrototypeOf(obj, proto);
+
+proto.y = 20;
+proto.z = 40;
+
+obj.x // 10
+obj.y // 20
+obj.z // 40
+```
+
+``` JS
+Object.setPrototypeOf(1, {}) === 1 // true
+Object.setPrototypeOf('foo', {}) === 'foo' // true
+Object.setPrototypeOf(true, {}) === true // true
+
+Object.setPrototypeOf(undefined, {})
+// TypeError: Object.setPrototypeOf called on null or undefined
+Object.setPrototypeOf(null, {})
+// TypeError: Object.setPrototypeOf called on null or undefined
+```
+
+#### Object.getPrototypeOf(obj)
+
+读取一个对象的原型对象
+
+- 如果参数不是对象，会被自动转为对象
+- 如果参数是undefined或null，它们无法转为对象，所以会报错
+
+``` JS
+function Rectangle() {
+  // ...
+}
+
+const rec = new Rectangle();
+
+Object.getPrototypeOf(rec) === Rectangle.prototype
+// true
+
+Object.setPrototypeOf(rec, Object.prototype);
+Object.getPrototypeOf(rec) === Rectangle.prototype
+// false
+
+
+
+// 等同于 Object.getPrototypeOf(Number(1))
+Object.getPrototypeOf(1)
+// Number {[[PrimitiveValue]]: 0}
+
+// 等同于 Object.getPrototypeOf(String('foo'))
+Object.getPrototypeOf('foo')
+// String {length: 0, [[PrimitiveValue]]: ""}
+
+// 等同于 Object.getPrototypeOf(Boolean(true))
+Object.getPrototypeOf(true)
+// Boolean {[[PrimitiveValue]]: false}
+
+Object.getPrototypeOf(1) === Number.prototype // true
+Object.getPrototypeOf('foo') === String.prototype // true
+Object.getPrototypeOf(true) === Boolean.prototype // true
+
+
+
+Object.getPrototypeOf(null)
+// TypeError: Cannot convert undefined or null to object
+Object.getPrototypeOf(undefined)
+// TypeError: Cannot convert undefined or null to object
+```
+
+### Object.keys()，Object.values()，Object.entries()
+
+#### Object.keys()
+
+返回参数对象**自身**的（不含继承的）所有**可遍历**（可枚举？enumerable）属性的**键名**的一个数组
+
+``` JS
+var obj = { foo: 'bar', baz: 42 };
+Object.keys(obj)
+// ["foo", "baz"]
+```
+
+ES2017 引入了跟Object.keys配套的Object.values和Object.entries，作为遍历一个对象的补充手段，供for...of循环使用
+
+``` JS
+let {keys, values, entries} = Object;
+let obj = { a: 1, b: 2, c: 3 };
+
+for (let key of keys(obj)) {
+  console.log(key); // 'a', 'b', 'c'
+}
+for (let value of values(obj)) {
+  console.log(value); // 1, 2, 3
+}
+for (let [key, value] of entries(obj)) {
+  console.log([key, value]); // ['a', 1], ['b', 2], ['c', 3]
+}
+```
+
+#### Object.values()
+
+参数对象**自身**的（不含继承的）所有可遍历（**enumerable**）属性的**键值**
+
+返回数组的成员顺序，与本章的《属性的遍历》部分介绍的排列规则一致。
+
+- Object.values会过滤属性名为 Symbol 值的属性
+- 如果Object.values方法的参数是一个字符串，会返回各个字符组成的一个数组
+- 如果参数不是对象，Object.values会先将其转为对象。由于数值和布尔值的包装对象，都不会为实例添加非继承的属性。所以，Object.values会返回空数组。
+
+``` JS
+const obj = { foo: 'bar', baz: 42 };
+Object.values(obj)
+// ["bar", 42]
+
+const obj = { 100: 'a', 2: 'b', 7: 'c' };
+Object.values(obj)
+// ["b", "c", "a"]
+
+Object.values('foo')
+// ['f', 'o', 'o']
+
+Object.values(42) // []
+Object.values(true) // []
+```
+
+Object.create方法的第二个参数添加的对象属性（属性p），**如果不显式声明，默认是不可遍历的，因为p的属性描述对象的enumerable默认是false，**
+
+``` JS
+// Object.create的第二个参数是一个属性描述对象，它所描述的对象属性，会添加到实例对象，作为该对象自身的属性
+const obj = Object.create({}, {p: {value: 42}});
+Object.values(obj) // []
+
+const obj = Object.create({}, {p:
+  {
+    value: 42,
+    enumerable: true, // 可枚举
+    writable: true, // 可写
+    configurable: true // 可配置
+  }
+});
+Object.values(obj) // [42]
+```
+
+#### Object.entries()
+
+参数对象**自身**的（不含继承的）所有**可遍历（enumerable）**属性的**键值对**数组
+
+除了返回值不一样，该方法的行为与`Object.values`基本一致
+
+``` JS
+const obj = { foo: 'bar', baz: 42 };
+Object.entries(obj)
+// [ ["foo", "bar"], ["baz", 42] ]
+```
+
+### Object.fromEntries()
+
+是`Object.entries()`的逆操作，用于将一个键值对数组转为对象。
+
+- 是将键值对的数据结构还原为对象，因此特别适合将 Map 结构转为对象
+- **配合URLSearchParams对象，将查询字符串转为对象**
+
+``` JS
+Object.fromEntries([
+  ['foo', 'bar'],
+  ['baz', 42]
+])
+// { foo: "bar", baz: 42 }
+
+
+Object.fromEntries(new URLSearchParams('foo=bar&baz=qux'))
+// { foo: "bar", baz: "qux" }
+```
+
+### Object.hasOwn()
+
+JavaScript 对象的属性分成两种：自身的属性和继承的属性。
+
+- 对象实例有一个hasOwnProperty()方法，可以判断某个属性是否为原生属性。
+- ES2022 在Object对象上面新增了一个`静态方法Object.hasOwn()`，也可以判断是否为自身的属性
+- Object.hasOwn()的一个好处是，对于**不继承Object.prototype的对象不会报错**，而hasOwnProperty()是会报错的
+
+``` JS
+const foo = Object.create({ a: 123 });
+foo.b = 456;
+
+// 对象foo的属性a是继承属性，属性b是原生属性。Object.hasOwn()对属性a返回false，对属性b返回true
+Object.hasOwn(foo, 'a') // false
+Object.hasOwn(foo, 'b') // true
+
+
+
+const obj = Object.create(null);
+// Object.create(null)返回的对象obj是没有原型的，不继承任何属性，这导致调用obj.hasOwnProperty()会报错，但是Object.hasOwn()就能正确处理这种情况
+obj.hasOwnProperty('foo') // 报错
+Object.hasOwn(obj, 'foo') // false
+```
