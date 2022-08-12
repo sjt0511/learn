@@ -481,3 +481,229 @@ for (let b in oproxy2) {
   - `target`：目标对象
   - `args`：构造函数的参数数组
   - `newTarget`：创造实例对象时，new命令作用的构造函数（下面例子的p）
+- `construct()`方法返回的**必须是一个对象**，否则会报错
+- 由于`construct()`拦截的是**构造函数**，所以它的**目标对象必须是函数**，否则就会报错
+- `construct()`方法中的`this`指向的是`handler`，而不是实例对象
+
+``` JS
+const p = new Proxy(function () {}, {
+  construct: function(target, args) {
+    console.log('called: ' + args.join(', '));
+    return { value: args[0] * 10 };
+  }
+});
+
+(new p(1)).value
+// "called: 1"
+// 10
+
+
+// construct()方法返回的必须是一个对象，否则会报错
+const p = new Proxy(function() {}, {
+  construct: function(target, argumentsList) {
+    return 1;
+  }
+});
+
+new p() // 报错
+// Uncaught TypeError: 'construct' on proxy: trap returned non-object ('1')
+
+
+// 由于construct()拦截的是构造函数，所以它的目标对象必须是函数，否则就会报错
+const p = new Proxy({}, {
+  construct: function(target, argumentsList) {
+    return {};
+  }
+});
+
+new p() // 报错
+// Uncaught TypeError: p is not a constructor
+
+
+// construct()方法中的this指向的是handler，而不是实例对象
+const handler = {
+  construct: function(target, args) {
+    console.log(this === handler);
+    return new target(...args);
+  }
+}
+
+let p = new Proxy(function () {}, handler);
+new p() // true
+```
+
+### deleteProperty(target, key)
+
+`deleteProperty`方法用于拦截`delete`操作，如果这个方法抛出错误或者返回`false`，当前属性就无法被`delete`命令删除
+
+目标对象自身的**不可配置（`configurable`）的属性**，不能被`deleteProperty`方法删除，否则报错
+
+``` JS
+var handler = {
+  deleteProperty (target, key) {
+    invariant(key, 'delete');
+    delete target[key];
+    return true;
+  }
+};
+function invariant (key, action) {
+  if (key[0] === '_') {
+    throw new Error(`Invalid attempt to ${action} private "${key}" property`);
+  }
+}
+
+var target = { _prop: 'foo' };
+var proxy = new Proxy(target, handler);
+delete proxy._prop
+// Error: Invalid attempt to delete private "_prop" property
+```
+
+### defineProperty(target, key, descriptor)
+
+`defineProperty()`方法拦截了`Object.defineProperty()`操作 => 返回false，导致添加新属性总是无效
+
+注意，如果目标对象不可扩展（non-extensible），则defineProperty()不能增加目标对象上不存在的属性，否则会报错。另外，如果目标对象的某个属性不可写（writable）或不可配置（configurable），则`defineProperty()`方法不得改变这两个设置。
+
+``` JS
+// defineProperty()方法内部没有任何操作，只返回false，导致添加新属性总是无效。注意，这里的false只是用来提示操作失败，本身并不能阻止添加新属性。
+var handler = {
+  defineProperty (target, key, descriptor) {
+    return false;
+  }
+};
+var target = {};
+var proxy = new Proxy(target, handler);
+proxy.foo = 'bar' // 不会生效
+```
+
+### getOwnPropertyDescriptor(target, key)
+
+`getOwnPropertyDescriptor()`方法拦截`Object.getOwnPropertyDescriptor()`，返回一个**属性描述对象**或者`undefined`
+
+``` JS
+// handler.getOwnPropertyDescriptor()方法对于第一个字符为下划线的属性名会返回undefined => 阻止访问内部属性
+var handler = {
+  getOwnPropertyDescriptor (target, key) {
+    if (key[0] === '_') {
+      return;
+    }
+    return Object.getOwnPropertyDescriptor(target, key);
+  }
+};
+var target = { _foo: 'bar', baz: 'tar' };
+var proxy = new Proxy(target, handler);
+Object.getOwnPropertyDescriptor(proxy, 'wat')
+// undefined
+Object.getOwnPropertyDescriptor(proxy, '_foo')
+// undefined
+Object.getOwnPropertyDescriptor(proxy, 'baz')
+// { value: 'tar', writable: true, enumerable: true, configurable: true }
+```
+
+### getPrototypeOf(target)
+
+`getPrototypeOf()`方法主要用来拦截获取对象原型：
+
+- `Object.prototype.__proto__`
+- `Object.prototype.isPrototypeOf()`
+- `Object.getPrototypeOf()`
+- `Reflect.getPrototypeOf()`
+- `instanceof`
+
+`getPrototypeOf()`方法的返回值必须是`对象`或者`null`，否则报错。另外，如果目标对象**不可扩展（non-extensible）**， getPrototypeOf()方法必须返回目标对象的`原型对象`。
+
+``` JS
+// getPrototypeOf()方法拦截Object.getPrototypeOf()，返回proto对象
+var proto = {};
+var p = new Proxy({}, {
+  getPrototypeOf(target) {
+    return proto;
+  }
+});
+Object.getPrototypeOf(p) === proto // true
+```
+
+### isExtensible(target)
+
+`isExtensible()`方法拦截`Object.isExtensible()`操作
+
+- 该方法**只能返回布尔值**，否则返回值会被自动转为布尔值
+- 有一个强限制，它的**返回值必须与目标对象的isExtensible属性保持一致**，否则就会抛出错误
+- `Object.isExtensible(proxy) === Object.isExtensible(target)`
+
+``` JS
+var p = new Proxy({}, {
+  isExtensible: function(target) {
+    console.log("called");
+    return true;
+  }
+});
+
+Object.isExtensible(p)
+// "called"
+// true
+
+
+var p = new Proxy({}, {
+  isExtensible: function(target) {
+    return false;
+  }
+});
+
+Object.isExtensible(p)
+// Uncaught TypeError: 'isExtensible' on proxy: trap result does not reflect extensibility of proxy target (which is 'true')
+```
+
+### ownKeys()
+
+`ownKeys()`方法用来拦截对象**自身属性的读取**操作：
+
+- `Object.getOwnPropertyNames()`
+- `Object.getOwnPropertySymbols()`
+- `Object.keys()`
+- `for...in`循环
+
+``` JS
+// 截了对于target对象的Object.keys()操作，只返回a、b、c三个属性之中的a属性
+let target = {
+  a: 1,
+  b: 2,
+  c: 3
+};
+
+let handler = {
+  ownKeys(target) {
+    return ['a'];
+  }
+};
+
+let proxy = new Proxy(target, handler);
+
+Object.keys(proxy) // [ 'a' ]
+
+
+// 拦截第一个字符为下划线的属性名
+let target = {
+  _bar: 'foo',
+  _prop: 'bar',
+  prop: 'baz'
+};
+
+let handler = {
+  ownKeys (target) {
+    return Reflect.ownKeys(target).filter(key => key[0] !== '_');
+  }
+};
+
+let proxy = new Proxy(target, handler);
+for (let key of Object.keys(proxy)) {
+  console.log(target[key]);
+}
+// "baz"
+```
+
+使用`Object.keys()`方法时，有三类属性会被`ownKeys()`方法自动过滤，不会返回
+
+- 目标对象上不存在的属性
+- 属性名为 Symbol 值
+- 不可遍历（enumerable）的属性
