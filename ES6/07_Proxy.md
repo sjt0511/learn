@@ -654,7 +654,7 @@ Object.isExtensible(p)
 // Uncaught TypeError: 'isExtensible' on proxy: trap result does not reflect extensibility of proxy target (which is 'true')
 ```
 
-### ownKeys()
+### ownKeys(target)
 
 `ownKeys()`方法用来拦截对象**自身属性的读取**操作：
 
@@ -707,3 +707,302 @@ for (let key of Object.keys(proxy)) {
 - 目标对象上不存在的属性
 - 属性名为 Symbol 值
 - 不可遍历（enumerable）的属性
+
+``` JS
+// ownKeys()方法之中，显式返回不存在的属性（d）、Symbol 值（Symbol.for('secret')）、不可遍历的属性（key），结果都被自动过滤掉
+let target = {
+  a: 1,
+  b: 2,
+  c: 3,
+  [Symbol.for('secret')]: '4',
+};
+
+Object.defineProperty(target, 'key', {
+  enumerable: false,
+  configurable: true,
+  writable: true,
+  value: 'static'
+});
+
+let handler = {
+  ownKeys(target) {
+    return ['a', 'd', Symbol.for('secret'), 'key'];
+  }
+};
+
+let proxy = new Proxy(target, handler);
+
+Object.keys(proxy)
+// ['a']
+```
+
+`ownKeys()`方法还可以拦截`Object.getOwnPropertyNames()`、`for...in循环`
+
+``` JS
+// Object.getOwnPropertyNames
+var p = new Proxy({}, {
+  ownKeys: function(target) {
+    return ['a', 'b', 'c'];
+  }
+});
+Object.getOwnPropertyNames(p) // [ 'a', 'b', 'c' ]
+
+// for...in循环
+const obj = { hello: 'world' };
+const proxy = new Proxy(obj, {
+  ownKeys: function () {
+    return ['a', 'b'];
+  }
+});
+for (let key in proxy) {
+  console.log(key); // 没有任何输出
+}
+```
+
+`ownKeys()`方法返回的数组成员，只能是字符串或 Symbol 值。如果有其他类型的值，或者返回的根本不是数组，就会报错
+
+``` JS
+var obj = {};
+
+var p = new Proxy(obj, {
+  ownKeys: function(target) {
+    return [123, true, undefined, null, {}, []];
+  }
+});
+
+Object.getOwnPropertyNames(p)
+// Uncaught TypeError: 123 is not a valid property name
+```
+
+- 如果目标对象自身包含**不可配置的属性**，则该属性必须被`ownKeys()`方法返回，否则报错。
+- 如果目标对象是**不可扩展的**（non-extensible），这时`ownKeys()`方法返回的数组之中，**必须包含原对象的所有属性，且不能包含多余的属性**，否则报错。
+
+``` JS
+// obj对象的a属性是不可配置的，这时ownKeys()方法返回的数组之中，必须包含a
+var obj = {};
+Object.defineProperty(obj, 'a', {
+  configurable: false,
+  enumerable: true,
+  value: 10 }
+);
+
+var p = new Proxy(obj, {
+  ownKeys: function(target) {
+    return ['b'];
+  }
+});
+
+Object.getOwnPropertyNames(p) // Uncaught TypeError: 'ownKeys' on proxy: trap result did not include 'a'
+
+
+// obj对象是不可扩展的，这时ownKeys()方法返回的数组之中，包含了obj对象的多余属性b，所以导致了报错
+var obj = {
+  a: 1
+};
+
+Object.preventExtensions(obj);
+
+var p = new Proxy(obj, {
+  ownKeys: function(target) {
+    return ['a', 'b'];
+  }
+});
+
+Object.getOwnPropertyNames(p) // Uncaught TypeError: 'ownKeys' on proxy: trap returned extra keys but proxy target is non-extensible
+```
+
+### preventExtensions(target)
+
+`preventExtensions()`方法拦截`Object.preventExtensions()`。该方法必须返回一个布尔值，否则会被自动转为布尔值。
+
+- 这个方法有一个限制，只有目标对象**不可扩展**时（即`Object.isExtensible(proxy)`为`false`），`proxy.preventExtensions`才能返回`true`，否则会报错
+- 为了防止出现这个问题，通常要在`proxy.preventExtensions()`方法里面，调用一次`Object.preventExtensions()`
+
+``` JS
+// 目标对象不可扩展才返回true
+var proxy = new Proxy({}, {
+  preventExtensions: function(target) {
+    return true;
+  }
+});
+
+Object.preventExtensions(proxy) // Uncaught TypeError: 'preventExtensions' on proxy: trap returned truish but the proxy target is extensible
+
+
+// 在proxy.preventExtensions()方法里调用一次Object.preventExtensions()
+var proxy = new Proxy({}, {
+  preventExtensions: function(target) {
+    console.log('called');
+    Object.preventExtensions(target);
+    return true;
+  }
+});
+
+Object.preventExtensions(proxy)
+// "called"
+// Proxy {}
+```
+
+### setPrototypeOf(target, proto)
+
+`setPrototypeOf()`方法主要用来拦截`Object.setPrototypeOf()`方法
+
+- 该方法只能返回布尔值，否则会被自动转为布尔值。
+- 如果目标对象**不可扩展**（non-extensible），`setPrototypeOf()`方法**不得改变目标对象的原型**
+
+``` JS
+var handler = {
+  setPrototypeOf (target, proto) {
+    throw new Error('Changing the prototype is forbidden');
+  }
+};
+var proto = {};
+var target = function () {};
+var proxy = new Proxy(target, handler);
+Object.setPrototypeOf(proxy, proto);
+// Error: Changing the prototype is forbidden
+```
+
+## Proxy.revocable()
+
+`Proxy.revocable()`方法返回一个**可取消的** Proxy 实例
+
+- `Proxy.revocable()`方法返回一个对象，该对象的`proxy`属性是Proxy实例，`revoke`属性是一个函数，可以取消Proxy实例。
+- `Proxy.revocable()`的一个使用场景是，**目标对象不允许直接访问，必须通过代理访问**，一旦访问结束，就收回代理权，不允许再次访问。
+
+``` JS
+// 当执行revoke函数之后，再访问Proxy实例，就会抛出一个错误
+let target = {};
+let handler = {};
+
+let {proxy, revoke} = Proxy.revocable(target, handler);
+
+proxy.foo = 123;
+proxy.foo // 123
+
+revoke();
+proxy.foo // TypeError: Revoked
+```
+
+## this问题
+
+虽然 Proxy 可以代理针对目标对象的访问，但它**不是目标对象的透明代理**，即不做任何拦截的情况下，也无法保证与目标对象的行为一致。主要原因就是**在 Proxy 代理的情况下，目标对象内部的this关键字会指向 Proxy 代理**。
+
+``` JS
+// 一旦proxy代理target，target.m()内部的this就是指向proxy，而不是target。
+// 虽然proxy没有做任何拦截，target.m()和proxy.m()返回不一样的结果。
+const target = {
+  m: function () {
+    console.log(this === proxy);
+  }
+};
+const handler = {};
+
+const proxy = new Proxy(target, handler);
+
+target.m() // false
+proxy.m()  // true
+```
+
+由于`this`指向的变化，导致 Proxy 无法代理目标对象
+
+``` JS
+// 目标对象jane的name属性，实际保存在外部WeakMap对象_name上面，通过this键区分。
+// 由于通过proxy.name访问时，this指向proxy，导致无法取到值，所以返回undefined
+const _name = new WeakMap();
+
+class Person {
+  constructor(name) {
+    _name.set(this, name);
+  }
+  get name() {
+    return _name.get(this);
+  }
+}
+
+const jane = new Person('Jane');
+jane.name // 'Jane'
+
+const proxy = new Proxy(jane, {});
+proxy.name // undefined
+```
+
+有些原生对象的内部属性，只有通过正确的`this`才能拿到，所以 Proxy 也无法代理这些原生对象的属性
+
+- `this`绑定原始对象，就可以解决这个问题
+- Proxy 拦截函数内部的`this`，指向的是`handler`对象
+
+``` JS
+// getDate()方法只能在Date对象实例上面拿到，如果this不是Date对象实例就会报错
+const target = new Date();
+const handler = {};
+const proxy = new Proxy(target, handler);
+
+proxy.getDate(); // TypeError: this is not a Date object.
+
+
+// this绑定原始对象，就可以解决这个问题
+onst target = new Date('2015-01-01');
+const handler = {
+  get(target, prop) {
+    if (prop === 'getDate') {
+      return target.getDate.bind(target);
+    }
+    return Reflect.get(target, prop);
+  }
+};
+const proxy = new Proxy(target, handler);
+
+proxy.getDate() // 1
+
+
+// Proxy 拦截函数内部的this，指向的是handler对象
+// get()和set()拦截函数内部的this，指向的都是handler对象
+const handler = {
+  get: function (target, key, receiver) {
+    console.log(this === handler);
+    return 'Hello, ' + key;
+  },
+  set: function (target, key, value) {
+    console.log(this === handler);
+    target[key] = value;
+    return true;
+  }
+};
+
+const proxy = new Proxy({}, handler);
+
+proxy.foo
+// true
+// Hello, foo
+
+proxy.foo = 1
+// true
+```
+
+## 实例：Web 服务的客户端
+
+Proxy 对象可以拦截目标对象的任意属性，这使得它很合适用来写 Web 服务的客户端。
+
+``` JS
+const service = createWebService('http://example.com/data');
+
+service.employees().then(json => {
+  const employees = JSON.parse(json);
+  // ···
+});
+```
+
+新建了一个 Web 服务的接口，这个接口返回各种数据。Proxy 可以拦截这个对象的任意属性，所以不用为每一种数据写一个适配方法，只要写一个 Proxy 拦截就可以了
+
+``` JS
+function createWebService(baseUrl) {
+  return new Proxy({}, {
+    get(target, propKey, receiver) {
+      return () => httpGet(baseUrl + '/' + propKey);
+    }
+  });
+}
+```
+
+Proxy 也可以用来实现数据库的 ORM 层
