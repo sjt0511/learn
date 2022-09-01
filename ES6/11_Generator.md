@@ -1706,3 +1706,403 @@ result.value.then(function(data){
 可以看到，虽然 Generator 函数将异步操作表示得很简洁，但是流程管理却不方便（即何时执行第一阶段、何时执行第二阶段）。
 
 ### Thunk 函数
+
+Thunk 函数是自动执行 Generator 函数的一种方法
+
+#### 参数的求值策略
+
+"求值策略"，即函数的参数到底应该何时求值。
+
+``` JS
+var x = 1;
+
+function f(m) {
+  return m * 2;
+}
+
+f(x + 5)
+```
+
+上面代码先定义函数`f`，然后向它传入表达式`x + 5`。请问，这个表达式应该何时求值？
+
+- 一种意见是"传值调用"（`call by value`），即在进入函数体之前，就计算`x + 5`的值（等于 `6`），再将这个值传入函数`f`。C 语言就采用这种策略
+- 另一种意见是“传名调用”（call by name），即直接将表达式x + 5传入函数体，只在用到它的时候求值。Haskell 语言采用这种策略
+
+``` JS
+f(x + 5)
+// 传值调用时，等同于
+f(6)
+
+
+f(x + 5)
+// 传名调用时，等同于
+(x + 5) * 2
+```
+
+传值调用和传名调用，哪一种比较好？
+
+回答是各有利弊。传值调用比较简单，但是对参数求值的时候，实际上还没用到这个参数，有可能造成性能损失
+
+``` JS
+function f(a, b){
+  return b;
+}
+
+f(3 * x * x - 2 * x - 1, x);
+```
+
+上面代码中，函数`f`的第一个参数是一个复杂的表达式，但是函数体内根本没用到。对这个参数求值，实际上是不必要的。因此，有一些计算机学家倾向于"传名调用"，即只在执行时求值。
+
+- 它是“传名调用”的一种实现策略，用来替换某个表达式
+
+#### Thunk 函数的含义
+
+编译器的“传名调用”实现，往往是将参数放到一个临时函数之中，再将这个临时函数传入函数体。这个**临时函数就叫做 Thunk 函数**。
+
+``` JS
+function f(m) {
+  return m * 2;
+}
+
+f(x + 5);
+
+// 等同于
+
+var thunk = function () {
+  return x + 5;
+};
+
+function f(thunk) {
+  return thunk() * 2;
+}
+```
+
+上面代码中，函数 `f` 的参数`x + 5`被一个函数替换了。凡是用到原参数的地方，对Thunk函数求值即可。
+
+这就是 Thunk 函数的定义，它是“传名调用”的一种实现策略，用来替换某个表达式
+
+#### JavaScript 语言的 Thunk 函数
+
+JavaScript 语言是**传值调用**，它的 Thunk 函数含义有所不同。在 JavaScript 语言中，**Thunk 函数替换的不是表达式，而是多参数函数**，将其替换成一个**只接受`回调函数`作为参数的`单参数函数`**。
+
+- 单参数函数
+- 参数只能是回调函数
+
+``` JS
+// 正常版本的readFile（多参数版本）
+fs.readFile(fileName, callback);
+
+// Thunk版本的readFile（单参数版本）
+var Thunk = function (fileName) {
+  return function (callback) {
+    return fs.readFile(fileName, callback);
+  };
+};
+
+var readFileThunk = Thunk(fileName);
+readFileThunk(callback);
+```
+
+上面代码中，`fs`模块的`readFile`方法是一个多参数函数，两个参数分别为文件名和回调函数。经过转换器处理，它变成了一个单参数函数，只接受回调函数作为参数。这个单参数版本，就叫做 Thunk 函数。
+
+任何函数，只要参数有回调函数，就能写成 Thunk 函数的形式。下面是一个简单的 Thunk 函数转换器。
+
+``` JS
+// ES5版本
+var Thunk = function(fn){
+  return function (){
+    var args = Array.prototype.slice.call(arguments);
+    return function (callback){
+      args.push(callback);
+      return fn.apply(this, args);
+    }
+  };
+};
+
+// ES6版本
+const Thunk = function(fn) {
+  return function (...args) {
+    return function (callback) {
+      return fn.call(this, ...args, callback);
+    }
+  };
+};
+
+var readFileThunk = Thunk(fs.readFile);
+readFileThunk(fileA)(callback);
+```
+
+使用上面的转换器，生成`fs.readFile`的 Thunk 函数
+
+``` JS
+function f(a, cb) {
+  cb(a);
+}
+const ft = Thunk(f);
+
+ft(1)(console.log) // 1
+```
+
+#### Thunkify 模块
+
+生产环境的转换器，建议使用 Thunkify 模块。
+
+首先是安装 `$ npm install thunkify`
+
+使用方式:
+
+``` JS
+var thunkify = require('thunkify');
+var fs = require('fs');
+
+var read = thunkify(fs.readFile);
+read('package.json')(function(err, str){
+  // ...
+});
+```
+
+Thunkify 的源码与上一节那个简单的转换器非常像
+
+``` JS
+function thunkify(fn) {
+  return function() {
+    var args = new Array(arguments.length);
+    var ctx = this;
+
+    for (var i = 0; i < args.length; ++i) {
+      args[i] = arguments[i];
+    }
+
+    return function (done) {
+      var called;
+
+      args.push(function () {
+        if (called) return;
+        called = true;
+        done.apply(null, arguments);
+      });
+
+      try {
+        fn.apply(ctx, args);
+      } catch (err) {
+        done(err);
+      }
+    }
+  }
+};
+```
+
+它的源码主要多了一个检查机制，变量`called`确保回调函数只运行一次。这样的设计与下文的 Generator 函数相关。请看下面的例子。
+
+``` JS
+function f(a, b, callback){
+  var sum = a + b;
+  callback(sum);
+  callback(sum);
+}
+
+var ft = thunkify(f);
+var print = console.log.bind(console);
+ft(1, 2)(print);
+// 3
+```
+
+上面代码中，由于`thunkify`只允许回调函数执行一次，所以只输出一行结果。
+
+#### Generator 函数的流程管理
+
+ES6 有了 Generator 函数，Thunk 函数可以用于 Generator 函数的自动流程管理
+
+Generator 函数可以自动执行
+
+``` JS
+function* gen() {
+  // ...
+}
+
+var g = gen();
+var res = g.next();
+
+while(!res.done){
+  console.log(res.value);
+  res = g.next();
+}
+```
+
+上面代码中，Generator 函数`gen`会自动执行完所有步骤
+
+但是，这不适合异步操作。如果必须保证前一步执行完，才能执行后一步，上面的自动执行就不可行。这时，Thunk 函数就能派上用处。以读取文件为例。下面的 Generator 函数封装了两个异步操作。
+
+``` JS
+var fs = require('fs');
+var thunkify = require('thunkify');
+var readFileThunk = thunkify(fs.readFile);
+
+var gen = function* (){
+  var r1 = yield readFileThunk('/etc/fstab');
+  console.log(r1.toString());
+  var r2 = yield readFileThunk('/etc/shells');
+  console.log(r2.toString());
+};
+```
+
+上面代码中，`yield`命令用于将程序的执行权移出 Generator 函数，那么就需要一种方法，将执行权再交还给 Generator 函数。
+
+这种方法就是 Thunk 函数，因为它可以在回调函数里，将执行权交还给 Generator 函数。为了便于理解，我们先看如何手动执行上面这个 Generator 函数。
+
+``` JS
+var g = gen();
+
+var r1 = g.next();
+r1.value(function (err, data) {
+  if (err) throw err;
+  var r2 = g.next(data);
+  r2.value(function (err, data) {
+    if (err) throw err;
+    g.next(data);
+  });
+});
+```
+
+上面代码中，变量`g`是 Generator 函数的内部指针，表示目前执行到哪一步。`next`方法负责将指针移动到下一步，并返回该步的信息（`value`属性和`done`属性）。
+
+仔细查看上面的代码，可以发现 Generator 函数的执行过程，其实是将同一个回调函数，反复传入`next`方法的`value`属性。这使得我们可以用递归来自动完成这个过程。
+
+#### Thunk 函数的自动流程管理
+
+Thunk 函数真正的威力，在于可以自动执行 Generator 函数。下面就是一个基于 Thunk 函数的 Generator 执行器。
+
+``` JS
+function run(fn) {
+  var gen = fn();
+
+  function next(err, data) {
+    var result = gen.next(data);
+    if (result.done) return;
+    result.value(next);
+  }
+
+  next();
+}
+
+function* g() {
+  // ...
+}
+
+run(g);
+```
+
+上面代码的`run`函数，就是一个 Generator 函数的自动执行器。内部的`next`函数就是 Thunk 的回调函数。`next`函数先将指针移到 Generator 函数的下一步（`gen.next`方法），然后判断 Generator 函数是否结束（result.done属性），如果没结束，就将`next`函数再传入 Thunk 函数（`result.value`属性），否则就直接退出。
+
+有了这个执行器，执行 Generator 函数方便多了。不管内部有多少个异步操作，直接把 Generator 函数传入`run`函数即可。当然，前提是每一个异步操作，都要是 Thunk 函数，也就是说，跟在`yield`命令后面的必须是 Thunk 函数。
+
+``` JS
+var g = function* (){
+  var f1 = yield readFileThunk('fileA');
+  var f2 = yield readFileThunk('fileB');
+  // ...
+  var fn = yield readFileThunk('fileN');
+};
+
+run(g);
+```
+
+上面代码中，函数`g`封装了`n`个异步的读取文件操作，只要执行`run`函数，这些操作就会自动完成。这样一来，异步操作不仅可以写得像同步操作，而且一行代码就可以执行。
+
+Thunk 函数并不是 Generator 函数自动执行的唯一方案。因为自动执行的关键是，**必须有一种机制，自动控制 Generator 函数的流程，`接收和交还`程序的执行权**。回调函数可以做到这一点，Promise 对象也可以做到这一点。
+
+### co模块
+
+#### 基本用法
+
+`co` 模块是著名程序员 TJ Holowaychuk 于 2013 年 6 月发布的一个小工具，用于 Generator 函数的自动执行。
+
+- `co`函数返回一个**Promise对象**，因此可以用`then`方法添加回调函数
+
+下面是一个 Generator 函数，用于依次读取两个文件。
+
+``` JS
+var gen = function* () {
+  var f1 = yield readFile('/etc/fstab');
+  var f2 = yield readFile('/etc/shells');
+  console.log(f1.toString());
+  console.log(f2.toString());
+};
+```
+
+`co` 模块可以让你不用编写 Generator 函数的执行器。
+
+``` JS
+var co = require('co');
+co(gen);
+```
+
+上面代码中，Generator 函数只要传入`co`函数，就会自动执行。
+
+`co`函数返回一个**Promise对象**，因此可以用`then`方法添加回调函数。
+
+``` JS
+co(gen).then(function (){
+  console.log('Generator 函数执行完成');
+});
+```
+
+上面代码中，等到 Generator 函数执行结束，就会输出一行提示
+
+#### 基于 Promise 对象的自动执行
+
+还是沿用上面的例子。首先，把`fs`模块的`readFile`方法包装成一个 Promise 对象。
+
+``` JS
+var fs = require('fs');
+
+var readFile = function (fileName){
+  return new Promise(function (resolve, reject){
+    fs.readFile(fileName, function(error, data){
+      if (error) return reject(error);
+      resolve(data);
+    });
+  });
+};
+
+var gen = function* (){
+  var f1 = yield readFile('/etc/fstab');
+  var f2 = yield readFile('/etc/shells');
+  console.log(f1.toString());
+  console.log(f2.toString());
+};
+```
+
+然后，手动执行上面的 Generator 函数。
+
+``` JS
+var g = gen();
+
+g.next().value.then(function(data){
+  g.next(data).value.then(function(data){
+    g.next(data);
+  });
+});
+```
+
+手动执行其实就是用`then`方法，层层添加回调函数。理解了这一点，就可以写出一个自动执行器。
+
+``` JS
+function run(gen){
+  var g = gen();
+
+  function next(data){
+    var result = g.next(data);
+    if (result.done) return result.value;
+    result.value.then(function(data){
+      next(data);
+    });
+  }
+
+  next();
+}
+
+run(gen);
+```
+
+上面代码中，只要 Generator 函数还没执行到最后一步，`next`函数就调用自身，以此实现自动执行。
