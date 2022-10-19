@@ -960,4 +960,3 @@ Promise.try(() => database.users.get({id: userId}))
   .then(...)
   .catch(...)
 ```
-
