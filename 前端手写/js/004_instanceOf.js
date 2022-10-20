@@ -8,6 +8,9 @@
 // 如果 一直找到Object.prototype.__proto__ == null，Object的基类(null)上面都没找到，则返回 false
 const _004_instanceOf = {
     myInstanceOf (example, classFunc) {
+        // 由于instance要检测的是某对象，需要有一个前置判断条件
+        // 基本数据类型直接返回false
+        if(typeof example !== 'object' || example === null) return false;
         let proto = Object.getPrototypeOf(example) // 实例原型
         while(true) {
             if (proto === null) return false
