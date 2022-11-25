@@ -15,7 +15,8 @@ const upload = [
   {
     path: '/upload/auto',
     name: 'upload_auto',
-    component: () => import('./views/upload/uploadAuto.vue')
+    component: () => import('./views/upload/UploadAuto.vue'),
+    meta: { title: '上传' }
   }
 ]
 

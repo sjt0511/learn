@@ -1,0 +1,20 @@
+@import './function.scss';
+
+
+$primary: #1890ff;
+
+$colors: (
+  primary: $primary,
+  success: #52c41a,
+  warning: #faad14,
+  danger: #ff4d4f,
+  font3: #333,
+  font6: #666,
+  font9: #999,
+  fonta: #aaa,
+  fontc: #ccc,
+  back: #e6f7ff,
+  border: #d9d9d9,
+  pure: #fff,
+  dark: #000
+)

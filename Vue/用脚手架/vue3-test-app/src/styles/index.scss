@@ -1,0 +1,84 @@
+
+body, div, header, main, section, footer, ul, li,
+h1, h2, h3, h4, h5, h6, p, img, label, input, textarea {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  outline: none;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  position: relative;
+  width: 100%;
+}
+
+button {
+  font-size: size(13);
+  line-height: 1;
+  padding: 0;
+  margin: 0;
+  outline: none;
+  display: inline-block;
+  transition: all .3s ease;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pai-btn {
+  padding: size(6) size(12);
+  border-radius: size(4);
+  border: size(1) solid color();
+  font-size: size(13);
+  line-height: size(14);
+  vertical-align: text-bottom;
+  background-color: transparent;
+  color: color();
+  transition: all .2s ease;
+
+  &_icon {
+    padding-right: size(5);
+    line-height: size(14);
+  }
+
+  &:hover {
+    border-color: color();
+    color: color(pure);
+    background-color: rgba(color(), .8);
+    // box-shadow: getShadow(btn);
+    transition: all .1s ease-in;
+
+    .fa, .fas {
+      color: color(pure);
+    }
+  }
+
+  &:active {
+    box-shadow: none;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    color: color(border);
+    border-color: color(border);
+
+    .fa, .fas {
+      color: color(border);
+    }
+
+    &:hover {
+      border-color: color(border);
+      color: color(border);
+      background-color: transparent;
+      box-shadow: none;
+
+      .fa, .fas {
+        color: color(border);
+      }
+    }
+  }
+}
