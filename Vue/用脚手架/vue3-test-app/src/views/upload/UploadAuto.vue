@@ -91,7 +91,7 @@ const upload = (file, fileName = undefined) => {
   })
 
   const data = new FormData()
-  data.append('file', file)
+  data.append('file', file, fileName)
 
   service.post('/common/upload', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
