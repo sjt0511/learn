@@ -52,7 +52,6 @@ const uploadSelect = () => {
   // 生成图片
   const item = bannerList[active.value] // 选中的选项
   const image = new Image()
-  image.src = item.src
   image.onload = () => { // 图片加载完毕后
     // 图片绘制到Canvas对象
     const canvas = document.createElement('canvas')
@@ -64,6 +63,7 @@ const uploadSelect = () => {
     canvas.toBlob((file) => {
       upload(file, item.name)
     }, 'image/jpeg')
+    image.src = item.src
   }
   
 }
