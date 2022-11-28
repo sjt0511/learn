@@ -63,9 +63,8 @@ const uploadSelect = () => {
     canvas.toBlob((file) => {
       upload(file, item.name)
     }, 'image/jpeg')
-    image.src = item.src
   }
-  
+  image.src = item.src
 }
 /** 普通上传图片 */
 const uploadImg = (e) => {
@@ -85,14 +84,14 @@ const upload = (file, fileName = undefined) => {
   })
   // 请求拦截
   service.interceptors.request.use(config => {
-    config.headers.Authorization = 'pc-10081-2fba79b01d75489c91d56a18d9fb40b4'
+    config.headers.Authorization = 'pc-10081-d5811da35a8a40f3862a5224139f5019'
     return config
   }, error => {
     return Promise.reject(error)
   })
 
   const data = new FormData()
-  data.append('file', file, fileName)
+  data.append('file', file)
 
   service.post('/common/upload', data, {
     headers: { 'Content-Type': 'multipart/form-data' }
