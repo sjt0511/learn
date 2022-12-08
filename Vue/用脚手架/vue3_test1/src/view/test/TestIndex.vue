@@ -12,7 +12,7 @@
       :list="tab.data"
       @doTab="init"
     ></comp-tab>
-    <p>{{ matrix_info }}</p>
+    <p>{{ matrix_info.find }} / {{matrix_info.all}}</p>
     <ul class="test-index_matrix">
       <li v-for="(row, index) in matrix" :key="index" class="test-index_row">
         <item-cell v-for="(cell, cindex) in row" v-model.modelValue="row[cindex]"
@@ -62,10 +62,13 @@ export default {
                 all++
                 list.push({ row: rindex, column: cindex })
               }
-              if (cell.value > 8 && isFinite(cell)) find++ // 标成9就是找到了
+              if (cell.value > 8 && isFinite(cell.value)) find++ // 标成9就是找到了
               if (cell.open) opened++
           })
       })
+      if (find === all) {
+        // alert()
+      }
       return {
         find,
         all,
@@ -138,7 +141,7 @@ export default {
           matrix[list[i].row][list[i].column].open = true
           matrix[list[i].row][list[i].column].explose = true
         }
-        // alert('失败')
+        alert('失败')
       }
     }
 

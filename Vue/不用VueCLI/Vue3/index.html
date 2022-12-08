@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Comppatible" content="IE=edge">
+  <title>Vue3 API</title>
+  <style>
+    [v-cloak] {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- 结构 -->
+  <div id="app" v-cloak>
+    <!-- 不能使用驼峰式，会变成全小写mycomponent而找不到组件 -->
+    <my-component v-my-direct v-my-direct2="'red'"></my-component>
+    {{ message }} {{ time.date }} {{ time.time }}
+    <input type="text" v-model="text">
+    <button @click="add">添加</button>
+    <ul>
+      <li v-for="(item, index) in list" :key="item.id">{{item.label}}</li>
+    </ul>
+  </div>
+  <!-- 逻辑 -->
+  <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+  <!-- 导入映射表 (Import Maps) 告诉浏览器如何定位到导入的 vue -->
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+      }
+    }
+  </script>
+  <!-- 由于使用的是ES module,务必确保使用的是 ES 模块版本 -- 导入的 CDN URL 指向的是 Vue 的 ES 模块构建版本 -->
+  <script type="module">
+    import { createApp, ref, reactive } from 'vue'
+    // 因为 ES 模块不能通过 file:// 协议工作。为了使其工作，你需要使用本地 HTTP 服务器通过 http:// 协议提供 index.html
+    // 要启动一个本地的 HTTP 服务器，请先安装 Node.js，然后从命令行在 HTML 文件所在文件夹下运行 npx serve
+    import useTime from './js/useTime.js'
+
+    /** 创建App */
+    const app = createApp({
+      setup () {
+        let time = useTime()
+        let message = ref('hello')
+        let text = ref('')
+        const list = reactive([])
+
+        const add = () => {
+          if (!text.value) return
+          if (list.some(x => x.label === text.value)) {
+            alert('no repeat')
+          } else {
+            list.push({ label: text.value, id: Date.now() })
+          }
+          text.value = ''
+        }
+
+        return {
+          message,
+          text,
+          list,
+          add,
+          time
+        }
+      }
+    })
+    
+    /** 一些API的应用 */
+    /** 全局API */
+    // ---------- 1 注册组件
+    app.component('my-component', {
+      template: `<p>component content</p>`
+    })
+    // 得到一个已注册的组件
+    const MyComponent = app.component('my-component')
+
+    // ---------- 2 注册一个全局指令（自定义指令）
+    // 一个自定义指令由一个包含类似组件生命周期钩子的对象来定义
+    // 钩子函数会接收到指令所绑定元素作为其参数
+    app.directive('my-direct', {
+      // 在绑定元素的 attribute 前
+      // 或事件监听器应用前调用
+      created(el, binding, vnode, prevVnode) {
+        // el：指令绑定到的元素。这可以用于直接操作 DOM
+        /* binding:{
+            value: '传递给指令的值',
+            oldValue: '之前的值仅在 beforeUpdate 和 updated 中可用',
+            arg: '传递给指令的参数 (如果有的话)',
+            modifiers: '一个包含修饰符的对象 (如果有的话)',
+            instance: '使用该指令的组件实例'
+          }*/
+        // vnode：代表绑定元素的底层 VNode
+        // prevNode：之前的渲染中代表指令所绑定元素的 VNode。仅在 beforeUpdate 和 updated 钩子中可用
+
+        // 指令：<div v-example:foo.bar="baz">
+        // 对应的 binding: { arg: 'foo', modifiers: { bar: true }, value: /* `baz` 的值 */, oldValue: /* 上一次更新时 `baz` 的值 */}
+      },
+      // 在元素被插入到 DOM 前调用
+      beforeMount(el, binding, vnode, prevVnode) {},
+      // 在绑定元素的父组件
+      // 及他自己的所有子节点都挂载完成后调用
+      mounted(el, binding, vnode, prevVnode) {
+        // el.focus()
+        console.log('my-direct')
+      },
+      // 绑定元素的父组件更新前调用
+      beforeUpdate(el, binding, vnode, prevVnode) {},
+      // 在绑定元素的父组件
+      // 及他自己的所有子节点都更新后调用
+      updated(el, binding, vnode, prevVnode) {},
+      // 绑定元素的父组件卸载前调用
+      beforeUnmount(el, binding, vnode, prevVnode) {},
+      // 绑定元素的父组件卸载后调用
+      unmounted(el, binding, vnode, prevVnode) {}
+    })
+    // 注册指令的简化形式
+    app.directive('my-direct2', (el, binding) => {
+      // 这会在 `mounted` 和 `updated` 时都调用
+      el.style.color = binding.value
+    })
+
+    // ---------- 3 安装插件
+    // 第一个参数应是插件本身plugin，可选的第二个参数是要传递给插件的选项options
+    // 插件可以是：a.一个带 install(app, options) 方法的对象 b.一个函数(会被用作install()方法)
+    // 插件选项options会作为install()方法的入参
+    //  app.use() 对同一个插件多次调用，该插件只会被安装一次
+    app.use()
+
+    /** 挂载根实例 */
+    app.mount('#app')
+  </script>
+</body>
+</html>

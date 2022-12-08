@@ -42,7 +42,7 @@ export default {
     // 鼠标点击事件
     // 单击左键-未翻开的翻开
     const clickLeft = function () {
-      if (!item.value.open) {
+      if (!item.value.open&&!item.value.flag) {
         context.emit('open', item.value)
       }
     }
@@ -80,6 +80,7 @@ export default {
   height: 30px;
   background: white;
   border: 1px solid #eee;
+  user-select: none;
 
   &--close {
     background: pink;
