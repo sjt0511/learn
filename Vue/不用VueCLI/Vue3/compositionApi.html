@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Comppatible" content="IE=edge">
+  <title>Vue3 API</title>
+  <style>
+    [v-cloak] {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- 结构 -->
+  <div id="app" v-cloak>
+  </div>
+  <!-- 逻辑 -->
+  <!-- <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script> -->
+  <!-- 导入映射表 (Import Maps) 告诉浏览器如何定位到导入的 vue -->
+  <script type="importmap">
+    {
+      "imports": {
+        "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+      }
+    }
+  </script>
+  <!-- 由于使用的是ES module,务必确保使用的是 ES 模块版本 -- 导入的 CDN URL 指向的是 Vue 的 ES 模块构建版本 -->
+  <script type="module">
+    import { createApp, ref, reactive, onMounted, version, nextTick } from 'vue'
+    // 因为 ES 模块不能通过 file:// 协议工作。为了使其工作，你需要使用本地 HTTP 服务器通过 http:// 协议提供 index.html
+    // 要启动一个本地的 HTTP 服务器，请先安装 Node.js，然后从命令行在 HTML 文件所在文件夹下运行 npx serve
+    import useTime from './js/useTime.js'
+
+    /** 创建App */
+    const app = createApp({
+      /** 组合式API:setup() */
+      // setup() 自身并不含对组件实例的访问权，即在 setup() 中访问 this 会是 undefined。你可以在选项式 API 中访问组合式 API 暴露的值，但反过来则不行
+      // setup() 应该同步地返回一个对象。唯一可以使用 async setup() 的情况是，该组件是 Suspense 组件的后裔
+      setup (props, context) {
+        // ----- 1 props:响应式 - 如果解构了props对象，解构出的变量将会丢失响应性 - 可以使用toRefs()和toRef()保持解构响应性
+        // 将 `props` 转为一个其中全是 ref 的对象，然后解构
+        const { title } = toRefs(props)
+        // `title` 是一个追踪着 `props.title` 的 ref
+        console.log(title.value)
+        // 或者，将 `props` 的单个属性转为一个 ref
+        const title2 = toRef(props, 'title')
+        // ----- 2 context:Setup上下文 - 非响应式，可以安全解构
+        // 透传 Attributes（非响应式的对象，等价于 $attrs）
+        console.log(context.attrs)
+        // 插槽（非响应式的对象，等价于 $slots
+        console.log(context.slots)
+        // 触发事件（函数，等价于 $emit）
+        console.log(context.emit)
+        // 暴露公共属性（函数）
+        console.log(context.expose)
+      }
+    })
+
+    /** 挂载根实例 */
+    app.mount('#app')
+  </script>
+</body>
+</html>
