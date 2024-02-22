@@ -29,6 +29,29 @@ function debounce (fn, wait = 1000) {
     }
 }
 
+// 上述代码存在一个问题，由于使用了setTimeout，首次触发事件的时候并不是立即执行fn，而是等待 wait 时间之后再执行fn
+// 像按钮点击这种需要及时响应的事件，上面的代码就无法满足首次立即执行
+// 自己的逻辑：增加一个是否可执行标志flag，首次立即执行（同时置flag=false表示已经执行了需要隔wait时间才能再执行），再进行setTimeout计时，时间到了flag=true表示可以执行,，否则再触发又会清零重新计时
+function debounce_immediate (fn, wait = 1000) {
+    let timer = null
+    let flag = true
+
+    return function (...args) {
+        if (timer) {
+            clearTimeout(timer)
+        }
+        if (flag) { // 首次执行
+            fn.apply(this, args)
+            flag = false
+        }
+        timer = setTimeout(() => {
+           flag = true
+        }, wait)
+    }
+}
+
+// 防抖合并版，可以指定是否立即执行
+
 // 节流 重在加锁，一定时间内就调用一次函数
 //  scroll 事件，每隔一秒计算一次位置信息等
 //  浏览器播放事件，每个一秒计算一次进度信息等
